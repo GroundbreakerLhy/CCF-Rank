@@ -1,24 +1,24 @@
 {
-  "name": "zotero-plugin-template",
+  "name": "ccf-rank",
   "type": "module",
-  "version": "3.1.0",
-  "description": "Zotero Plugin Template",
+  "version": "1.0.0",
+  "description": "用于显示 CCF 排名的 Zotero 插件",
   "config": {
-    "addonName": "Zotero Plugin Template",
-    "addonID": "addontemplate@euclpts.com",
-    "addonRef": "addontemplate",
-    "addonInstance": "AddonTemplate",
-    "prefsPrefix": "extensions.zotero.addontemplate"
+    "addonName": "CCF Rank",
+    "addonID": "ccf-rank@euclpts.com",
+    "addonRef": "ccf-rank",
+    "addonInstance": "CCFRank",
+    "prefsPrefix": "extensions.zotero.ccf-rank"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/windingwind/zotero-plugin-template.git"
+    "url": "git+https://github.com/GroundbreakerLhy/CCF-Rank.git"
   },
-  "author": "windingwind",
+  "author": "GroundbreakerLhy",
   "bugs": {
-    "url": "https://github.com/windingwind/zotero-plugin-template/issues"
+    "url": "https://github.com/GroundbreakerLhy/CCF-Rank/issues"
   },
-  "homepage": "https://github.com/windingwind/zotero-plugin-template#readme",
+  "homepage": "https://github.com/GroundbreakerLhy/CCF-Rank#readme",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "zotero-plugin serve",
