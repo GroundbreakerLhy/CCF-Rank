@@ -62,7 +62,6 @@ async function onNotify(
   ids: Array<string | number>,
   extraData: { [key: string]: any },
 ) {
-  // 可以在这里添加通知处理逻辑
 }
 
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
@@ -75,13 +74,6 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   }
 }
 
-function onShortcuts(type: string) {
-  // 可以在这里添加快捷键处理逻辑
-}
-
-function onDialogEvents(type: string) {
-  // 可以在这里添加对话框事件处理逻辑
-}
 
 export default {
   onStartup,
@@ -90,6 +82,4 @@ export default {
   onMainWindowUnload,
   onNotify,
   onPrefsEvent,
-  onShortcuts,
-  onDialogEvents,
 };

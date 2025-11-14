@@ -34,12 +34,12 @@ npm start
 ### 显示 CCF 等级列
 
 1. 在 Zotero 文献列表的表头右键点击
-2. 勾选 "CCF Rank" 和 "CCF Category"
+2. 勾选 "CCF 等级" 和 "CCF 分类"
 3. 插件会自动识别并显示对应的 CCF 等级
 
 ### 手动设置等级
 
-点击文献的 CCF Rank 单元格，在弹出菜单中选择等级或清除手动设置。手动设置的等级优先级高于自动匹配。
+点击文献的 CCF 等级 单元格，在弹出菜单中选择等级或清除手动设置。
 
 ## 匹配逻辑
 
@@ -62,14 +62,12 @@ npm start
 
 ## 数据更新
 
-CCF 推荐列表存储在 `src/data/ccf-conferences.json`。
+CCF 推荐列表存储在 `src/data/ccf-conferences.json`。数据来源于 [CCF 官方网站](https://ccf.atom.im/)。
 
 更新数据：
 ```bash
 python scripts/build-ccf-db.py
 ```
-
-脚本会从 https://ccf.atom.im/ 自动抓取最新数据。
 
 ## 开发
 
@@ -79,28 +77,14 @@ python scripts/build-ccf-db.py
 CCF-Rank/
 ├── src/
 │   ├── modules/
-│   │   └── ccfRank.ts          # 核心逻辑
+│   │   └── ccfRank.ts    
 │   ├── data/
-│   │   └── ccf-conferences.json # 数据
-│   └── hooks.ts                 # 生命周期
+│   │   └── ccf-conferences.json 
+│   └── hooks.ts                 
 ├── scripts/
-│   └── build-ccf-db.py          # 数据抓取
+│   └── build-ccf-db.py         
 └── addon/
-    └── locale/                  # 多语言
-```
-
-### 构建
-
-```bash
-npm run build
-```
-
-构建产物位于 `.scaffold/build/` 目录。
-
-### 发布
-
-```bash
-npm run release
+    └── locale/              
 ```
 
 ## 许可证
@@ -109,4 +93,4 @@ AGPL-3.0
 
 ## 作者
 
-GroundbreakerLhy
+Groundbreaker

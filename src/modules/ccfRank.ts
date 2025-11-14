@@ -364,7 +364,7 @@ export class CCFRankFactory {
                 const span = doc.createElement('span');
                 span.className = `cell ${column.className}`;
                 span.style.textAlign = 'center';
-                span.style.cursor = 'pointer';  // 显示为可点击
+                span.style.cursor = 'pointer';
 
                 if (data) {
                     span.innerText = data;
