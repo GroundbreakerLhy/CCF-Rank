@@ -1,7 +1,7 @@
 {
   "name": "ccf-rank",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "用于显示 CCF 排名的 Zotero 插件",
   "config": {
     "addonName": "CCF Rank",

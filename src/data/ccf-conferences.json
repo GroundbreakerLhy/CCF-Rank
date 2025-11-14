@@ -27,6 +27,12 @@
             "category": "计算机体系结构/并行与分布计算/存储系统"
         },
         {
+            "abbr": "HPCA",
+            "fullName": "IEEE International Symposium on High-Performance Computer Architecture",
+            "rank": "A",
+            "category": "计算机体系结构/并行与分布计算/存储系统"
+        },
+        {
             "abbr": "MICRO",
             "fullName": "IEEE/ACM International Symposium on Microarchitecture",
             "rank": "A",

@@ -258,22 +258,33 @@ const ccfService = new CCFRankService();
  */
 class ManualCCFRankService {
     private storageKey = 'extensions.ccfRank.manualRanks';
+    private ignoreKey = 'extensions.ccfRank.ignoreItems';
     private cache: Map<number, string> = new Map();
+    private ignoreSet: Set<number> = new Set();
 
     constructor() {
         this.loadFromStorage();
     }
 
     /**
-     * 从 Zotero 偏好设置加载手动设置的等级
+     * 从 Zotero 偏好设置加载手动设置的等级和忽略列表
      */
     private loadFromStorage() {
         try {
+            // 加载手动设置的等级
             const stored = Zotero.Prefs.get(this.storageKey, true) as string;
             if (stored) {
                 const data = JSON.parse(stored);
                 this.cache = new Map(Object.entries(data).map(([k, v]) => [parseInt(k), v as string]));
                 safeLog(`[CCF Manual] Loaded ${this.cache.size} manual ranks from storage`);
+            }
+
+            // 加载忽略列表
+            const ignoredStr = Zotero.Prefs.get(this.ignoreKey, true) as string;
+            if (ignoredStr) {
+                const ignoredIds = JSON.parse(ignoredStr);
+                this.ignoreSet = new Set(ignoredIds);
+                safeLog(`[CCF Manual] Loaded ${this.ignoreSet.size} ignored items from storage`);
             }
         } catch (e) {
             safeLog('[CCF Manual] Error loading from storage:', e);
@@ -285,12 +296,18 @@ class ManualCCFRankService {
      */
     private saveToStorage() {
         try {
+            // 保存手动设置的等级
             const obj: Record<number, string> = {};
             this.cache.forEach((value, key) => {
                 obj[key] = value;
             });
             Zotero.Prefs.set(this.storageKey, JSON.stringify(obj), true);
-            safeLog(`[CCF Manual] Saved ${this.cache.size} manual ranks to storage`);
+
+            // 保存忽略列表
+            const ignoredIds = Array.from(this.ignoreSet);
+            Zotero.Prefs.set(this.ignoreKey, JSON.stringify(ignoredIds), true);
+
+            safeLog(`[CCF Manual] Saved ${this.cache.size} manual ranks and ${this.ignoreSet.size} ignored items`);
         } catch (e) {
             safeLog('[CCF Manual] Error saving to storage:', e);
         }
@@ -303,6 +320,7 @@ class ManualCCFRankService {
      */
     setRank(itemID: number, rank: 'A' | 'B' | 'C') {
         this.cache.set(itemID, rank);
+        this.ignoreSet.delete(itemID);
         this.saveToStorage();
         safeLog(`[CCF Manual] Set item ${itemID} to rank ${rank}`);
     }
@@ -322,6 +340,7 @@ class ManualCCFRankService {
      */
     clearRank(itemID: number) {
         this.cache.delete(itemID);
+        this.ignoreSet.delete(itemID);
         this.saveToStorage();
         safeLog(`[CCF Manual] Cleared manual rank for item ${itemID}`);
     }
@@ -332,6 +351,25 @@ class ManualCCFRankService {
      */
     hasManualRank(itemID: number): boolean {
         return this.cache.has(itemID);
+    }
+
+    /**
+     * 将条目加入忽略列表（不显示自动匹配的等级）
+     * @param itemID 条目 ID
+     */
+    ignoreItem(itemID: number) {
+        this.ignoreSet.add(itemID);
+        this.cache.delete(itemID); // 加入忽略时移除手动设置
+        this.saveToStorage();
+        safeLog(`[CCF Manual] Added item ${itemID} to ignore list`);
+    }
+
+    /**
+     * 检查条目是否在忽略列表中
+     * @param itemID 条目 ID
+     */
+    isIgnored(itemID: number): boolean {
+        return this.ignoreSet.has(itemID);
     }
 }
 
@@ -352,6 +390,10 @@ export class CCFRankFactory {
             dataKey: 'ccfRank',
             label: 'CCF 等级',
             dataProvider: (item: Zotero.Item, dataKey: string) => {
+                // 如果在忽略列表中，不显示任何等级
+                if (manualRankService.isIgnored(item.id)) {
+                    return '';
+                }
                 // 优先使用手动设置的等级
                 const manualRank = manualRankService.getRank(item.id);
                 if (manualRank) {
@@ -364,22 +406,15 @@ export class CCFRankFactory {
                 const span = doc.createElement('span');
                 span.className = `cell ${column.className}`;
                 span.style.textAlign = 'center';
-                span.style.cursor = 'pointer';
 
                 if (data) {
                     span.innerText = data;
                     span.style.fontWeight = 'bold';
-                    span.style.color = 'light-dark(#000000, #ffffff)';
+                    span.style.color = '#000000';
                 } else {
                     span.innerText = '-';
-                    span.style.color = 'light-dark(#9ca3af, #6b7280)';
+                    span.style.color = '#9ca3af';
                 }
-
-                // 点击单元格时显示选择菜单
-                span.addEventListener('click', (event: MouseEvent) => {
-                    event.stopPropagation();
-                    CCFRankFactory.showRankSelectionMenu(event, index);
-                });
 
                 return span;
             },
@@ -391,6 +426,10 @@ export class CCFRankFactory {
             dataKey: 'ccfCategory',
             label: 'CCF 分类',
             dataProvider: (item: Zotero.Item, dataKey: string) => {
+                // 如果在忽略列表中，不显示分类
+                if (manualRankService.isIgnored(item.id)) {
+                    return '';
+                }
                 return ccfService.getCategoryFromItem(item) || '';
             },
             renderCell(index, data, column, isFirstColumn, doc) {
@@ -400,10 +439,10 @@ export class CCFRankFactory {
 
                 if (data) {
                     span.innerText = data;
-                    span.style.color = 'light-dark(#000000, #ffffff)';
+                    span.style.color = '#000000';
                 } else {
                     span.innerText = '-';
-                    span.style.color = 'light-dark(#9ca3af, #6b7280)';
+                    span.style.color = '#9ca3af';
                 }
 
                 return span;
@@ -445,78 +484,15 @@ export class CCFRankFactory {
                     label: '清除手动设置',
                     commandListener: () => this.clearManualRank(),
                 },
+                {
+                    tag: 'menuitem',
+                    label: '忽略此条目（不显示等级）',
+                    commandListener: () => this.ignoreItems(),
+                },
             ],
         });
 
         safeLog('CCF Rank right-click menu registered successfully');
-    }
-
-    /**
-     * 在鼠标位置显示 CCF 等级选择菜单
-     * @param event 鼠标事件
-     * @param rowIndex 行索引
-     */
-    static showRankSelectionMenu(event: MouseEvent, rowIndex: number) {
-        const doc = event.view?.document;
-        if (!doc) return;
-
-        // 获取当前行对应的条目
-        const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
-        if (!itemsView) return;
-
-        const item = (itemsView as any).getRow(rowIndex)?.ref;
-        if (!item) return;
-
-        // 创建弹出菜单
-        const popup = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menupopup');
-        popup.id = 'ccf-rank-selection-popup';
-
-        // 添加等级选项
-        const ranks: Array<'A' | 'B' | 'C'> = ['A', 'B', 'C'];
-        ranks.forEach(rank => {
-            const menuitem = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menuitem');
-            menuitem.setAttribute('label', `设置为 ${rank}`);
-            menuitem.addEventListener('command', () => {
-                manualRankService.setRank(item.id, rank);
-                // 刷新列表显示
-                if (itemsView) {
-                    (itemsView as any).tree?.invalidate();
-                }
-                safeLog(`[CCF Manual] Set item ${item.id} to rank ${rank}`);
-            });
-            popup.appendChild(menuitem);
-        });
-
-        // 添加分隔符
-        const separator = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menuseparator');
-        popup.appendChild(separator);
-
-        // 添加清除选项
-        const clearItem = doc.createElementNS('http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul', 'menuitem');
-        clearItem.setAttribute('label', '清除手动设置');
-        clearItem.addEventListener('command', () => {
-            manualRankService.clearRank(item.id);
-            // 刷新列表显示
-            if (itemsView) {
-                (itemsView as any).tree?.invalidate();
-            }
-            safeLog(`[CCF Manual] Cleared manual rank for item ${item.id}`);
-        });
-        popup.appendChild(clearItem);
-
-        // 添加到文档并显示
-        const docElement = doc.documentElement;
-        if (docElement) {
-            docElement.appendChild(popup);
-        }
-
-        // 在鼠标位置显示菜单
-        (popup as any).openPopupAtScreen(event.screenX, event.screenY, true);
-
-        // 菜单关闭后移除
-        popup.addEventListener('popuphidden', () => {
-            popup.remove();
-        }, { once: true });
     }
 
     /**
@@ -564,5 +540,28 @@ export class CCFRankFactory {
         }
 
         safeLog(`[CCF Manual] Cleared manual rank for ${items.length} items`);
+    }
+
+    /**
+     * 忽略选中的条目（不显示自动匹配的等级）
+     */
+    static ignoreItems() {
+        const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
+        if (!items || items.length === 0) {
+            safeLog('[CCF Manual] No items selected');
+            return;
+        }
+
+        items.forEach(item => {
+            manualRankService.ignoreItem(item.id);
+        });
+
+        // 刷新列表显示
+        const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
+        if (itemsView) {
+            (itemsView as any).refreshAndMaintainSelection();
+        }
+
+        safeLog(`[CCF Manual] Ignored ${items.length} items`);
     }
 }
