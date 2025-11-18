@@ -61,8 +61,7 @@ async function onNotify(
   type: string,
   ids: Array<string | number>,
   extraData: { [key: string]: any },
-) {
-}
+) {}
 
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
@@ -73,7 +72,6 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
       return;
   }
 }
-
 
 export default {
   onStartup,

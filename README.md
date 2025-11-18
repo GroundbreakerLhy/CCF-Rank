@@ -42,13 +42,15 @@ npm start
 ### 字段提取顺序
 
 **会议论文**
+
 1. proceedingsTitle
 2. publicationTitle
 3. conferenceName
 
 **期刊论文**
+
 - publicationTitle
-> **注意：** 由于某些期刊喜欢取顶刊相似名字打擦边球，极易出现误判，因此设计了手动忽略功能。如果用户发现误判，可以将该文献加入忽略列表，插件将不再显示其 CCF 分类。而且都发期刊了谁还看 CCF 啊👉👈
+  > **注意：** 由于某些期刊喜欢取顶刊相似名字打擦边球，极易出现误判，因此设计了手动忽略功能。如果用户发现误判，可以将该文献加入忽略列表，插件将不再显示其 CCF 分类。而且都发期刊了谁还看 CCF 啊👉👈
 
 ### 匹配策略
 
@@ -62,6 +64,7 @@ npm start
 CCF 推荐列表存储在 `src/data/ccf-conferences.json`。数据来源于 [CCF 官方网站](https://ccf.atom.im/)。
 
 更新数据：
+
 ```bash
 python scripts/build-ccf-db.py
 ```
@@ -74,14 +77,14 @@ python scripts/build-ccf-db.py
 CCF-Rank/
 ├── src/
 │   ├── modules/
-│   │   └── ccfRank.ts    
+│   │   └── ccfRank.ts
 │   ├── data/
-│   │   └── ccf-conferences.json 
-│   └── hooks.ts                 
+│   │   └── ccf-conferences.json
+│   └── hooks.ts
 ├── scripts/
-│   └── build-ccf-db.py         
+│   └── build-ccf-db.py
 └── addon/
-    └── locale/              
+    └── locale/
 ```
 
 ## 许可证
