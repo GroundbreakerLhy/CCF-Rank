@@ -59,6 +59,20 @@ class CCFRankService {
   getEntry(name: string): CCFEntry | null {
     if (!name) return null;
 
+    // 策略 0: 尝试从 "Abbr 'YY: Full Name" 格式中提取简称
+    // 例如: "CCS '18: 2018 ACM SIGSAC Conference..." -> 提取 "CCS"
+    const abbrMatch = name.match(/^([a-z]+)\s*['']\d{2,4}:\s*/i);
+    if (abbrMatch) {
+      const abbr = abbrMatch[1].toLowerCase();
+      const entry = this.abbrsMap.get(abbr);
+      if (entry) {
+        safeLog(
+          `[CCF Match] Found by extracted abbr from prefix: "${abbrMatch[0]}" -> ${entry.abbr} ${entry.rank}`,
+        );
+        return entry;
+      }
+    }
+
     // 预处理：标准化输入文本，移除常见前缀、后缀和干扰信息
     const original = name;
     let normalized = name.trim().toLowerCase();
@@ -71,6 +85,8 @@ class CCFRankService {
       .replace(/^proc\.? of (the )?/i, "")
       // 移除 "ICML '24:" 或 "AAAI'23:" 格式的前缀
       .replace(/^[a-z]+\s*['']\d{2,4}:\s*/i, "")
+      // 移除 "SIGSAC" (CCS 常见干扰词，数据库中不包含)
+      .replace(/\bsigsac\b/i, "")
       // 移除年份前缀，如 "2024 International Conference..."
       .replace(/^\d{4}\s+/, "")
       // 移除年份后缀，如 "Conference on AI 2024"
