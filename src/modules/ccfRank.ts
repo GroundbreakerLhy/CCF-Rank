@@ -24,23 +24,334 @@ interface CCFEntry {
   category: string;
 }
 
+type EntryKind = "conference" | "journal";
+
+interface IndexedEntry {
+  entry: CCFEntry;
+  kind: EntryKind;
+  normalizedFullName: string;
+  fullTokens: Set<string>;
+  aliases: string[];
+}
+
+const GENERIC_TOKENS = new Set([
+  "acm",
+  "and",
+  "annual",
+  "architecture",
+  "architectural",
+  "association",
+  "computer",
+  "conference",
+  "design",
+  "for",
+  "ieee",
+  "in",
+  "international",
+  "journal",
+  "on",
+  "of",
+  "proceedings",
+  "sig",
+  "sigact",
+  "sigplan",
+  "sigsoft",
+  "symposium",
+  "systems",
+  "the",
+  "theory",
+  "to",
+  "transactions",
+  "workshop",
+]);
+
+const INVALID_ABBRS = new Set([
+  "DBLP",
+  "INTERNATIONAL",
+  "PROCEEDINGS",
+  "SYMPOSIUM",
+  "CONFERENCE",
+  "JOURNAL",
+  "TRANSACTIONS",
+]);
+
 class CCFRankService {
   private conferences: CCFEntry[];
   private journals: CCFEntry[];
-  private abbrsMap: Map<string, CCFEntry>;
-  private fullNamesMap: Map<string, CCFEntry>;
+  private exactAbbrMap: Map<string, IndexedEntry[]>;
+  private exactFullNameMap: Map<string, IndexedEntry[]>;
+  private indexedEntries: IndexedEntry[];
 
   constructor() {
     this.conferences = (ccfData as any).conferences || [];
     this.journals = (ccfData as any).journals || [];
-    this.abbrsMap = new Map();
-    this.fullNamesMap = new Map();
+    this.exactAbbrMap = new Map();
+    this.exactFullNameMap = new Map();
+    this.indexedEntries = [];
 
-    // 构建索引 - 会议和期刊一起索引
-    const allEntries = [...this.conferences, ...this.journals];
-    allEntries.forEach((entry) => {
-      this.abbrsMap.set(entry.abbr.toLowerCase(), entry);
-      this.fullNamesMap.set(entry.fullName.toLowerCase(), entry);
+    this.buildIndexes();
+  }
+
+  private normalizeText(input: string): string {
+    return input
+      .toLowerCase()
+      .replace(/\b([a-z]+)\s*['’]\d{2,4}\b/g, "$1")
+      .replace(/[“”"'’`]/g, "")
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9+/\-\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private normalizeAbbr(input: string): string {
+    return input
+      .toUpperCase()
+      .replace(/[“”"'’`]/g, "")
+      .replace(/[^A-Z0-9+/\-\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private isMeaningfulToken(token: string): boolean {
+    if (token.length < 3) return false;
+    if (GENERIC_TOKENS.has(token)) return false;
+    return true;
+  }
+
+  private tokenizeMeaningful(input: string): Set<string> {
+    return new Set(
+      input
+        .split(" ")
+        .filter((x) => this.isMeaningfulToken(x.toLowerCase())),
+    );
+  }
+
+  private isUsableAlias(alias: string): boolean {
+    const normalized = this.normalizeAbbr(alias);
+    if (!normalized || normalized.length < 2) return false;
+    if (INVALID_ABBRS.has(normalized)) return false;
+
+    const tokens = normalized.split(" ").filter(Boolean);
+    if (tokens.length > 0) {
+      const allGeneric = tokens.every((token) =>
+        GENERIC_TOKENS.has(token.toLowerCase()),
+      );
+      if (allGeneric) return false;
+    }
+
+    return true;
+  }
+
+  private extractCandidateAbbrs(input: string): string[] {
+    const candidates = new Set<string>();
+
+    // Match bracketed abbreviations: (ICLR), (NeurIPS), (ASPLOS)
+    const bracketed = input.matchAll(/\(([A-Za-z][A-Za-z0-9+/-]{1,})\)/g);
+    for (const match of bracketed) {
+      candidates.add(this.normalizeAbbr(match[1]));
+    }
+
+    // Match forms like: ASPLOS '20: ...
+    const yearStyle = input.match(/^\s*([A-Za-z][A-Za-z0-9+/-]{1,})\s*['’]\d{2,4}\b/);
+    if (yearStyle) {
+      candidates.add(this.normalizeAbbr(yearStyle[1]));
+    }
+
+    return Array.from(candidates).filter((x) => x.length >= 2);
+  }
+
+  private classifyInputHint(normalizedInput: string): EntryKind | null {
+    const words = new Set(normalizedInput.split(" "));
+    const conferenceHints = ["conference", "symposium", "workshop", "proceedings"];
+    const journalHints = ["journal", "transactions", "letters"];
+
+    const hasConferenceHint = conferenceHints.some((x) => words.has(x));
+    const hasJournalHint = journalHints.some((x) => words.has(x));
+
+    if (hasConferenceHint && !hasJournalHint) return "conference";
+    if (hasJournalHint && !hasConferenceHint) return "journal";
+    return null;
+  }
+
+  private removeBoilerplate(input: string): string {
+    return input
+      .replace(/^proceedings of (the )?/i, "")
+      .replace(/^proc\.? of (the )?/i, "")
+      .replace(/^in:\s*/i, "")
+      .replace(/^\d{4}\s+/, "")
+      .replace(/\s*\(.*?\)\s*$/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private generateAbbrAliases(abbr: string): string[] {
+    const aliases = new Set<string>();
+    const base = this.normalizeAbbr(abbr);
+    if (!this.isUsableAlias(base)) return [];
+
+    aliases.add(base);
+    aliases.add(base.replace(/\s+/g, ""));
+
+    const prefixPattern = /^(INTERNATIONAL|IEEE|ACM|EUROPEAN|THE)\s+/;
+    let stripped = base;
+    while (prefixPattern.test(stripped)) {
+      stripped = stripped.replace(prefixPattern, "").trim();
+      if (this.isUsableAlias(stripped)) {
+        aliases.add(stripped);
+        aliases.add(stripped.replace(/\s+/g, ""));
+      }
+    }
+
+    return Array.from(aliases).filter((x) => this.isUsableAlias(x));
+  }
+
+  private containsAlias(normalizedInput: string, alias: string): boolean {
+    const escaped = alias
+      .toLowerCase()
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, "\\s+");
+    const re = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i");
+    return re.test(normalizedInput);
+  }
+
+  private scoreEntry(
+    inputText: string,
+    normalizedInput: string,
+    inputTokens: Set<string>,
+    indexed: IndexedEntry,
+  ): number {
+    let score = 0;
+
+    if (normalizedInput === indexed.normalizedFullName) {
+      return 1000;
+    }
+
+    for (const alias of indexed.aliases) {
+      if (!this.isUsableAlias(alias)) continue;
+      const lowerAlias = alias.toLowerCase();
+      if (this.containsAlias(normalizedInput, alias)) {
+        // Prefer direct abbreviation mention.
+        score = Math.max(score, 900 + Math.min(50, alias.length));
+      }
+
+      if (lowerAlias.length >= 4 && normalizedInput.includes(lowerAlias)) {
+        score = Math.max(score, 820 + Math.min(30, alias.length));
+      }
+    }
+
+    if (normalizedInput.includes(indexed.normalizedFullName)) {
+      score = Math.max(score, 780);
+    }
+
+    // Token overlap for resilient fuzzy matching on long titles.
+    let overlap = 0;
+    for (const token of inputTokens) {
+      if (indexed.fullTokens.has(token)) {
+        overlap += 1;
+      }
+    }
+    if (overlap >= 3) {
+      const precision = overlap / Math.max(1, inputTokens.size);
+      const recall = overlap / Math.max(1, indexed.fullTokens.size);
+      const f1 =
+        (2 * precision * recall) / Math.max(0.0001, precision + recall);
+      score = Math.max(score, 600 + Math.round(f1 * 200));
+    }
+
+    // Small bonus when exact abbreviation appears in raw text with punctuation.
+    if (
+      this.isUsableAlias(indexed.entry.abbr) &&
+      inputText.toUpperCase().includes(indexed.entry.abbr.toUpperCase())
+    ) {
+      score += 10;
+    }
+
+    return score;
+  }
+
+  private pickBestCandidate(
+    candidates: IndexedEntry[],
+    rawInput: string,
+    normalizedInput: string,
+    inputTokens: Set<string>,
+    preferredKind?: EntryKind,
+  ): IndexedEntry | null {
+    if (candidates.length === 0) return null;
+    if (candidates.length === 1) return candidates[0];
+
+    const hintedKind = preferredKind || this.classifyInputHint(normalizedInput);
+
+    let best: IndexedEntry | null = null;
+    let bestScore = -1;
+    let secondBestScore = -1;
+
+    for (const candidate of candidates) {
+      let score = this.scoreEntry(
+        rawInput,
+        normalizedInput,
+        inputTokens,
+        candidate,
+      );
+
+      if (hintedKind && candidate.kind === hintedKind) {
+        score += 160;
+      }
+
+      if (
+        normalizedInput === candidate.normalizedFullName ||
+        normalizedInput.includes(candidate.normalizedFullName)
+      ) {
+        score += 120;
+      }
+
+      if (score > bestScore) {
+        secondBestScore = bestScore;
+        bestScore = score;
+        best = candidate;
+      } else if (score > secondBestScore) {
+        secondBestScore = score;
+      }
+    }
+
+    // 歧义保护：如果前两名过于接近且输入过短，宁可不返回避免误判。
+    const veryShort = normalizedInput.replace(/\s+/g, "").length <= 8;
+    if (veryShort && bestScore - secondBestScore < 80) {
+      return null;
+    }
+
+    return best;
+  }
+
+  private buildIndexes() {
+    const allEntries: Array<{ entry: CCFEntry; kind: EntryKind }> = [
+      ...this.conferences.map((entry) => ({ entry, kind: "conference" as const })),
+      ...this.journals.map((entry) => ({ entry, kind: "journal" as const })),
+    ];
+
+    allEntries.forEach(({ entry, kind }) => {
+      const normalizedFullName = this.normalizeText(entry.fullName);
+      const fullTokens = this.tokenizeMeaningful(normalizedFullName);
+      const aliases = this.generateAbbrAliases(entry.abbr);
+
+      const indexed: IndexedEntry = {
+        entry,
+        kind,
+        normalizedFullName,
+        fullTokens,
+        aliases,
+      };
+
+      const fullNameEntries = this.exactFullNameMap.get(normalizedFullName) || [];
+      fullNameEntries.push(indexed);
+      this.exactFullNameMap.set(normalizedFullName, fullNameEntries);
+
+      aliases.forEach((alias) => {
+        const abbrEntries = this.exactAbbrMap.get(alias) || [];
+        abbrEntries.push(indexed);
+        this.exactAbbrMap.set(alias, abbrEntries);
+      });
+
+      this.indexedEntries.push(indexed);
     });
   }
 
@@ -56,94 +367,122 @@ class CCFRankService {
    * @param name 会议或期刊的名称
    * @returns CCF 条目信息或 null（未找到）
    */
-  getEntry(name: string): CCFEntry | null {
+  getEntry(name: string, preferredKind?: EntryKind): CCFEntry | null {
     if (!name) return null;
 
-    // 策略 0: 尝试从 "Abbr 'YY: Full Name" 格式中提取简称
-    // 例如: "CCS '18: 2018 ACM SIGSAC Conference..." -> 提取 "CCS"
-    const abbrMatch = name.match(/^([a-z]+)\s*['']\d{2,4}:\s*/i);
-    if (abbrMatch) {
-      const abbr = abbrMatch[1].toLowerCase();
-      const entry = this.abbrsMap.get(abbr);
-      if (entry) {
+    const original = name.trim();
+    const stripped = this.removeBoilerplate(original);
+    const normalizedInput = this.normalizeText(stripped);
+    const inputAbbr = this.normalizeAbbr(stripped);
+    const inputTokens = this.tokenizeMeaningful(normalizedInput);
+
+    // Phase 0: explicit short-name hints in the raw title.
+    for (const abbr of this.extractCandidateAbbrs(original)) {
+      const byExtractedAbbr = this.exactAbbrMap.get(abbr) || [];
+      const picked = this.pickBestCandidate(
+        byExtractedAbbr,
+        stripped,
+        normalizedInput,
+        inputTokens,
+        preferredKind,
+      );
+      if (picked) {
         safeLog(
-          `[CCF Match] Found by extracted abbr from prefix: "${abbrMatch[0]}" -> ${entry.abbr} ${entry.rank}`,
+          `[CCF Match] Found by extracted abbr: ${picked.entry.abbr} ${picked.entry.rank}`,
         );
-        return entry;
+        return picked.entry;
       }
     }
-
-    // 预处理：标准化输入文本，移除常见前缀、后缀和干扰信息
-    const original = name;
-    let normalized = name.trim().toLowerCase();
-    normalized = normalized
-      // 移除 "Proceedings of the 2024 on ..." 格式的前缀
-      .replace(/^proceedings of (the )?\d{4}\s+(on\s+)?/i, "")
-      // 移除 "Proceedings of (the) ..." 格式的前缀
-      .replace(/^proceedings of (the )?/i, "")
-      // 移除 "Proc. of (the) ..." 格式的前缀
-      .replace(/^proc\.? of (the )?/i, "")
-      // 移除 "ICML '24:" 或 "AAAI'23:" 格式的前缀
-      .replace(/^[a-z]+\s*['']\d{2,4}:\s*/i, "")
-      // 移除 "SIGSAC" (CCS 常见干扰词，数据库中不包含)
-      .replace(/\bsigsac\b/i, "")
-      // 移除年份前缀，如 "2024 International Conference..."
-      .replace(/^\d{4}\s+/, "")
-      // 移除年份后缀，如 "Conference on AI 2024"
-      .replace(/\s*\d{4}$/, "")
-      // 移除括号内容，如 "Conference (ICML)"
-      .replace(/\s*\([^)]*\)$/, "")
-      .trim();
 
     safeLog(
-      `[CCF Match] Original: "${original}" -> Normalized: "${normalized}"`,
+      `[CCF Match] Original: "${original}" -> Stripped: "${stripped}" -> Normalized: "${normalizedInput}"`,
     );
 
-    // 策略 1: 精确匹配简称（大小写不敏感）
-    // 适用场景：用户输入 "cvpr" 或 "CVPR"
-    let entry = this.abbrsMap.get(normalized);
-    if (entry) {
+    // Phase 1: exact abbreviation / alias match.
+    let abbrCandidates = this.exactAbbrMap.get(inputAbbr) || [];
+    let picked = this.pickBestCandidate(
+      abbrCandidates,
+      stripped,
+      normalizedInput,
+      inputTokens,
+      preferredKind,
+    );
+    if (picked) {
       safeLog(
-        `[CCF Match] Found by abbr exact: ${entry.abbr} -> ${entry.rank}`,
+        `[CCF Match] Found by abbr exact/alias: ${picked.entry.abbr} ${picked.entry.rank}`,
       );
-      return entry;
+      return picked.entry;
     }
 
-    // 策略 2: 精确匹配全称（大小写不敏感）
-    // 适用场景：用户输入完整的会议全称
-    entry = this.fullNamesMap.get(normalized);
-    if (entry) {
-      safeLog(
-        `[CCF Match] Found by fullName exact: ${entry.abbr} -> ${entry.rank}`,
-      );
-      return entry;
-    }
-
-    // 策略 3: 模糊匹配简称（检查输入是否包含简称）
-    // 适用场景：输入 "CVPR 2024" 包含简称 "cvpr"
-    // 防护机制：简称长度 >= 4，避免误匹配短简称（如 "AI", "SC"）
-    for (const [key, value] of this.abbrsMap.entries()) {
-      if (key.length >= 4 && normalized.includes(key)) {
-        safeLog(
-          `[CCF Match] Found by abbr fuzzy: "${normalized}" contains "${key}" -> ${value.abbr} ${value.rank}`,
+    // Handle patterns like "CCS '18: ..." by extracting the leading token.
+    const leadingToken = stripped.match(/^([A-Za-z][A-Za-z0-9+/-]{1,})\b/);
+    if (leadingToken) {
+      const tokenKey = this.normalizeAbbr(leadingToken[1]);
+      if (!new Set(["ACM", "IEEE", "INTERNATIONAL", "PROCEEDINGS"]).has(tokenKey)) {
+        abbrCandidates = this.exactAbbrMap.get(tokenKey) || [];
+        picked = this.pickBestCandidate(
+          abbrCandidates,
+          stripped,
+          normalizedInput,
+          inputTokens,
+          preferredKind,
         );
-        return value;
+        if (picked) {
+          safeLog(
+            `[CCF Match] Found by leading token: ${picked.entry.abbr} ${picked.entry.rank}`,
+          );
+          return picked.entry;
+        }
       }
     }
 
-    // 策略 4: 模糊匹配全称（检查输入是否包含全称）
-    // 适用场景：输入的长会议名称包含数据库中的全称
-    // 防护机制：全称长度 >= 20，避免误匹配短全称（如 "Computer Science"）
-    for (const [key, value] of this.fullNamesMap.entries()) {
-      if (key.length >= 20 && normalized.includes(key)) {
-        safeLog(
-          `[CCF Match] Found by fullName fuzzy: "${normalized}" contains "${key}" -> ${value.abbr} ${value.rank}`,
-        );
-        return value;
+    // Phase 2: exact full-name match.
+    const fullNameCandidates = this.exactFullNameMap.get(normalizedInput) || [];
+    picked = this.pickBestCandidate(
+      fullNameCandidates,
+      stripped,
+      normalizedInput,
+      inputTokens,
+      preferredKind,
+    );
+    if (picked) {
+      safeLog(
+        `[CCF Match] Found by fullName exact: ${picked.entry.abbr} ${picked.entry.rank}`,
+      );
+      return picked.entry;
+    }
+
+    // Phase 3: score-based fuzzy match (abbr containment + token overlap).
+    let best: CCFEntry | null = null;
+    let bestScore = 0;
+
+    for (const indexed of this.indexedEntries) {
+      const score = this.scoreEntry(
+        stripped,
+        normalizedInput,
+        inputTokens,
+        indexed,
+      );
+      const hintedKind = preferredKind || this.classifyInputHint(normalizedInput);
+      const adjusted =
+        hintedKind && indexed.kind === hintedKind ? score + 120 : score;
+      if (adjusted > bestScore) {
+        bestScore = adjusted;
+        best = indexed.entry;
       }
     }
 
-    safeLog(`[CCF Match] No match found for: "${normalized}"`);
+    // Confidence threshold keeps false positives low.
+    if (best && bestScore >= 760) {
+      safeLog(
+        `[CCF Match] Found by fuzzy score: ${best.abbr} ${best.rank}, score=${bestScore}`,
+      );
+      return best;
+    }
+
+    safeLog(
+      `[CCF Match] No match found for: "${normalizedInput}" (bestScore=${bestScore})`,
+    );
     return null;
   }
 
@@ -218,7 +557,7 @@ class CCFRankService {
           `[CCF] Conference paper proceedingsTitle: "${proceedingsTitle}"`,
         );
         if (proceedingsTitle) {
-          const entry = this.getEntry(proceedingsTitle);
+          const entry = this.getEntry(proceedingsTitle, "conference");
           if (entry) return entry;
         }
 
@@ -228,7 +567,7 @@ class CCFRankService {
           `[CCF] Conference paper publicationTitle: "${publicationTitle}"`,
         );
         if (publicationTitle) {
-          const entry = this.getEntry(publicationTitle);
+          const entry = this.getEntry(publicationTitle, "conference");
           if (entry) return entry;
         }
 
@@ -236,7 +575,7 @@ class CCFRankService {
         const conferenceName = item.getField("conferenceName") as string;
         safeLog(`[CCF] Conference paper conferenceName: "${conferenceName}"`);
         if (conferenceName) {
-          const entry = this.getEntry(conferenceName);
+          const entry = this.getEntry(conferenceName, "conference");
           if (entry) return entry;
         }
       }
@@ -248,7 +587,7 @@ class CCFRankService {
           `[CCF] Journal article publicationTitle: "${publicationTitle}"`,
         );
         if (publicationTitle) {
-          const entry = this.getEntry(publicationTitle);
+          const entry = this.getEntry(publicationTitle, "journal");
           if (entry) return entry;
         }
       }

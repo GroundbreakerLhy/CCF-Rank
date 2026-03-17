@@ -1,6 +1,6 @@
 {
-  "version": "2022",
-  "updateDate": "2025-11-14",
+  "version": "2026-03",
+  "updateDate": "2026-03-17",
   "conferences": [
     {
       "abbr": "PPoPP",
@@ -23,12 +23,6 @@
     {
       "abbr": "HPCA",
       "fullName": "IEEE International Symposium on High Performance Computer Architecture",
-      "rank": "A",
-      "category": "计算机体系结构/并行与分布计算/存储系统"
-    },
-    {
-      "abbr": "HPCA",
-      "fullName": "IEEE International Symposium on High-Performance Computer Architecture",
       "rank": "A",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -57,14 +51,20 @@
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
     {
-      "abbr": "USENIX ATC",
-      "fullName": "USENIX Annual Technical Conference",
+      "abbr": "ACM SIGOPS ATC",
+      "fullName": "ACM SIGOPS Annual Technical Conference",
       "rank": "A",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
     {
       "abbr": "EuroSys",
       "fullName": "European Conference on Computer Systems",
+      "rank": "A",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "HPDC",
+      "fullName": "The International ACM Symposium on High-Performance Parallel and Distributed Computing",
       "rank": "A",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -189,12 +189,6 @@
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
     {
-      "abbr": "HPDC",
-      "fullName": "The International ACM Symposium on High-Performance Parallel and Distributed Computing",
-      "rank": "B",
-      "category": "计算机体系结构/并行与分布计算/存储系统"
-    },
-    {
       "abbr": "ITC",
       "fullName": "International Test Conference",
       "rank": "B",
@@ -202,7 +196,7 @@
     },
     {
       "abbr": "LISA",
-      "fullName": "Large Installation system Administration Conference",
+      "fullName": "Large Installation System Administration Conference",
       "rank": "B",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -221,6 +215,12 @@
     {
       "abbr": "Euro-Par",
       "fullName": "European Conference on Parallel and Distributed Computing",
+      "rank": "B",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "ISCAS",
+      "fullName": "IEEE International Symposium on Circuits and Systems",
       "rank": "B",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -345,12 +345,6 @@
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
     {
-      "abbr": "ISCAS",
-      "fullName": "IEEE International Symposium on Circuits and Systems",
-      "rank": "C",
-      "category": "计算机体系结构/并行与分布计算/存储系统"
-    },
-    {
       "abbr": "ISLPED",
       "fullName": "International Symposium on Low Power Electronics and Design",
       "rank": "C",
@@ -377,6 +371,36 @@
     {
       "abbr": "ITC-Asia",
       "fullName": "International Test Conference in Asia",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "SEC",
+      "fullName": "ACM/IEEE Symposium on Edge Computing",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "NAS",
+      "fullName": "International Conference on Networking, Architecture and Storages",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "HotStorage",
+      "fullName": "Hot Topics in Storage and File Systems",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "APPT",
+      "fullName": "International Symposium on Advanced Parallel Processing Technology",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "JCC",
+      "fullName": "CCF&IEEE International Conference on Joint Cloud Computing",
       "rank": "C",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -730,7 +754,7 @@
     },
     {
       "abbr": "CT-RSA",
-      "fullName": "The Cryptographer’s Track at RSA Conference",
+      "fullName": "The Cryptographer's Track at RSA Conference",
       "rank": "C",
       "category": "网络与信息安全"
     },
@@ -825,12 +849,6 @@
       "category": "网络与信息安全"
     },
     {
-      "abbr": "HotSec",
-      "fullName": "",
-      "rank": "C",
-      "category": "网络与信息安全"
-    },
-    {
       "abbr": "EuroS&P",
       "fullName": "IEEE European Symposium on Security and Privacy",
       "rank": "C",
@@ -839,6 +857,24 @@
     {
       "abbr": "Inscrypt",
       "fullName": "International Conference on Information Security and Cryptology",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "CODASPY",
+      "fullName": "Conference on Data and Application Security and Privacy",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "BlockSys",
+      "fullName": "International Conference on Blockchain, Artificial Intelligence and Trustworthy Systems",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "CSCloud",
+      "fullName": "International Conference on Cyber Security and Cloud Computing",
       "rank": "C",
       "category": "网络与信息安全"
     },
@@ -1017,6 +1053,12 @@
       "category": "软件工程/系统软件/程序设计语言"
     },
     {
+      "abbr": "CC",
+      "fullName": "International Conference on Compiler Construction",
+      "rank": "B",
+      "category": "软件工程/系统软件/程序设计语言"
+    },
+    {
       "abbr": "PEPM",
       "fullName": "ACM SIGPLAN Workshop on Partial Evaluation and Program Manipulation",
       "rank": "C",
@@ -1173,6 +1215,12 @@
       "category": "软件工程/系统软件/程序设计语言"
     },
     {
+      "abbr": "MEMOCODE",
+      "fullName": "International Conference on Formal Methods and Models for Co-Design",
+      "rank": "C",
+      "category": "软件工程/系统软件/程序设计语言"
+    },
+    {
       "abbr": "SIGMOD",
       "fullName": "ACM SIGMOD Conference",
       "rank": "A",
@@ -1275,6 +1323,12 @@
       "category": "数据库/数据挖掘/内容检索"
     },
     {
+      "abbr": "WISE",
+      "fullName": "Web Information Systems Engineering",
+      "rank": "B",
+      "category": "数据库/数据挖掘/内容检索"
+    },
+    {
       "abbr": "APWeb",
       "fullName": "Asia Pacific Web Conference",
       "rank": "C",
@@ -1341,14 +1395,14 @@
       "category": "数据库/数据挖掘/内容检索"
     },
     {
-      "abbr": "WISE",
-      "fullName": "Web Information Systems Engineering",
+      "abbr": "ADMA",
+      "fullName": "International Conference on Advanced Data Mining and Applications",
       "rank": "C",
       "category": "数据库/数据挖掘/内容检索"
     },
     {
-      "abbr": "ADMA",
-      "fullName": "International Conference on Advanced Data Mining and Applications",
+      "abbr": "WISA",
+      "fullName": "Web Information Systems and Applications",
       "rank": "C",
       "category": "数据库/数据挖掘/内容检索"
     },
@@ -1407,6 +1461,12 @@
       "category": "计算机科学理论"
     },
     {
+      "abbr": "CADE",
+      "fullName": "International Conference on Automated Deduction",
+      "rank": "B",
+      "category": "计算机科学理论"
+    },
+    {
       "abbr": "CONCUR",
       "fullName": "International Conference on Concurrency Theory",
       "rank": "B",
@@ -1431,14 +1491,14 @@
       "category": "计算机科学理论"
     },
     {
-      "abbr": "CSL",
-      "fullName": "Computer Science Logic",
-      "rank": "C",
+      "abbr": "FMCAD",
+      "fullName": "Formal Method in Computer-Aided Design",
+      "rank": "B",
       "category": "计算机科学理论"
     },
     {
-      "abbr": "FMCAD",
-      "fullName": "Formal Method in Computer-Aided Design",
+      "abbr": "CSL",
+      "fullName": "Computer Science Logic",
       "rank": "C",
       "category": "计算机科学理论"
     },
@@ -1467,8 +1527,8 @@
       "category": "计算机科学理论"
     },
     {
-      "abbr": "RTA",
-      "fullName": "International Conference on Rewriting Techniques and Applications",
+      "abbr": "FSCD",
+      "fullName": "International Conference on Formal Structures for Computation and Deduction",
       "rank": "C",
       "category": "计算机科学理论"
     },
@@ -1599,6 +1659,12 @@
       "category": "计算机图形学与多媒体"
     },
     {
+      "abbr": "INTERSPEECH",
+      "fullName": "Conference of the International Speech Communication Association",
+      "rank": "B",
+      "category": "计算机图形学与多媒体"
+    },
+    {
       "abbr": "VRST",
       "fullName": "ACM Symposium on Virtual Reality Software and Technology",
       "rank": "C",
@@ -1613,12 +1679,6 @@
     {
       "abbr": "CGI",
       "fullName": "Computer Graphics International",
-      "rank": "C",
-      "category": "计算机图形学与多媒体"
-    },
-    {
-      "abbr": "INTERSPEECH",
-      "fullName": "Conference of the International Speech Communication Association",
       "rank": "C",
       "category": "计算机图形学与多媒体"
     },
@@ -1671,12 +1731,6 @@
       "category": "计算机图形学与多媒体"
     },
     {
-      "abbr": "ICVRV",
-      "fullName": "International Conference on Virtual Reality and Visualization",
-      "rank": "C",
-      "category": "计算机图形学与多媒体"
-    },
-    {
       "abbr": "CVM",
       "fullName": "Computational Visual Media",
       "rank": "C",
@@ -1685,6 +1739,30 @@
     {
       "abbr": "PRCV",
       "fullName": "Chinese Conference on Pattern Recognition and Computer Vision",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "ICIG",
+      "fullName": "International Conference on Image and Graphics",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "NCMMSC",
+      "fullName": "National Conference on Man-Machine Speech Communication",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "ASRU",
+      "fullName": "Automatic Speech Recognition and Understanding Workshop",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "SLT",
+      "fullName": "Spoken Language Technology",
       "rank": "C",
       "category": "计算机图形学与多媒体"
     },
@@ -1725,8 +1803,8 @@
       "category": "人工智能"
     },
     {
-      "abbr": "IJCAI",
-      "fullName": "International Joint Conference on Artificial Intelligence",
+      "abbr": "ICLR",
+      "fullName": "International Conference on Learning Representations",
       "rank": "A",
       "category": "人工智能"
     },
@@ -1805,6 +1883,12 @@
     {
       "abbr": "NAACL",
       "fullName": "North American Chapter of the Associationfor Computational Linguistics",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "IJCAI",
+      "fullName": "International Joint Conference on Artificial Intelligence",
       "rank": "B",
       "category": "人工智能"
     },
@@ -1929,6 +2013,18 @@
       "category": "人工智能"
     },
     {
+      "abbr": "IEEE CEC",
+      "fullName": "Congress on Evolutionary Computation",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "DAI",
+      "fullName": "International Conference on Distributed Artificial Intelligence",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "CSCW",
       "fullName": "ACM Conference on Computer Supported Cooperative Work and Social Computing",
       "rank": "A",
@@ -1941,8 +2037,8 @@
       "category": "人机交互与普适计算"
     },
     {
-      "abbr": "UbiComp/IMWUT",
-      "fullName": "ACM international joint conference on Pervasive and Ubiquitous Computing/ Proceedings of the ACM on Interactive, Mobile, Wearable and Ubiquitous Technologies",
+      "abbr": "UbiComp",
+      "fullName": "ACM International Joint Conference on Pervasive and Ubiquitous Computing",
       "rank": "A",
       "category": "人机交互与普适计算"
     },
@@ -2025,6 +2121,12 @@
       "category": "人机交互与普适计算"
     },
     {
+      "abbr": "",
+      "fullName": "IEEE World Haptics Conference",
+      "rank": "C",
+      "category": "人机交互与普适计算"
+    },
+    {
       "abbr": "INTERACT",
       "fullName": "International Conference on Human- Computer Interaction of International Federation for Information Processing",
       "rank": "C",
@@ -2067,6 +2169,18 @@
       "category": "人机交互与普适计算"
     },
     {
+      "abbr": "GPC",
+      "fullName": "Conference on Green, Pervasive and Cloud Computing",
+      "rank": "C",
+      "category": "人机交互与普适计算"
+    },
+    {
+      "abbr": "ICXR",
+      "fullName": "CCF International Conference on Extended Reality",
+      "rank": "C",
+      "category": "人机交互与普适计算"
+    },
+    {
       "abbr": "WWW",
       "fullName": "International World Wide Web Conference",
       "rank": "A",
@@ -2075,12 +2189,6 @@
     {
       "abbr": "RTSS",
       "fullName": "IEEE Real-Time Systems Symposium",
-      "rank": "A",
-      "category": "交叉/综合/新兴"
-    },
-    {
-      "abbr": "WINE",
-      "fullName": "Conference on Web and Internet Economics",
       "rank": "A",
       "category": "交叉/综合/新兴"
     },
@@ -2117,6 +2225,12 @@
     {
       "abbr": "MICCAI",
       "fullName": "International Conference on Medical Image Computing and Computer-Assisted Intervention",
+      "rank": "B",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "WINE",
+      "fullName": "Conference on Web and Internet Economics",
       "rank": "B",
       "category": "交叉/综合/新兴"
     },
@@ -2177,6 +2291,24 @@
     {
       "abbr": "ICIC",
       "fullName": "International Conference on Intelligent Computing",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "ICSS",
+      "fullName": "International Conference on Service Science",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "AFT",
+      "fullName": "Advances in Financial Technologies",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "IJTCS-FAW",
+      "fullName": "International Joint Conference on Theoretical Computer Science-Frontier of Algorithmic Wisdom",
       "rank": "C",
       "category": "交叉/综合/新兴"
     }
@@ -2261,8 +2393,32 @@
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
     {
+      "abbr": "",
+      "fullName": "Parallel Computing",
+      "rank": "B",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "",
+      "fullName": "Performance Evaluation: An International Journal",
+      "rank": "B",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "TCC",
+      "fullName": "IEEE Transactions on Cloud Computing",
+      "rank": "B",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
       "abbr": "JETC",
       "fullName": "ACM Journal on Emerging Technologies in Computing Systems",
+      "rank": "C",
+      "category": "计算机体系结构/并行与分布计算/存储系统"
+    },
+    {
+      "abbr": "",
+      "fullName": "Concurrency and Computation: Practice and Experience",
       "rank": "C",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -2275,12 +2431,6 @@
     {
       "abbr": "FGCS",
       "fullName": "Future Generation Computer Systems",
-      "rank": "C",
-      "category": "计算机体系结构/并行与分布计算/存储系统"
-    },
-    {
-      "abbr": "TCC",
-      "fullName": "IEEE Transactions on Cloud Computing",
       "rank": "C",
       "category": "计算机体系结构/并行与分布计算/存储系统"
     },
@@ -2387,6 +2537,12 @@
       "category": "计算机网络"
     },
     {
+      "abbr": "",
+      "fullName": "Ad hoc Networks",
+      "rank": "C",
+      "category": "计算机网络"
+    },
+    {
       "abbr": "CC",
       "fullName": "Computer Communications",
       "rank": "C",
@@ -2395,6 +2551,12 @@
     {
       "abbr": "TNSM",
       "fullName": "IEEE Transactions on Network and Service Management",
+      "rank": "C",
+      "category": "计算机网络"
+    },
+    {
+      "abbr": "",
+      "fullName": "IET Communications",
       "rank": "C",
       "category": "计算机网络"
     },
@@ -2411,6 +2573,12 @@
       "category": "计算机网络"
     },
     {
+      "abbr": "",
+      "fullName": "Networks",
+      "rank": "C",
+      "category": "计算机网络"
+    },
+    {
       "abbr": "PPNA",
       "fullName": "Peer-to-Peer Networking and Applications",
       "rank": "C",
@@ -2423,8 +2591,20 @@
       "category": "计算机网络"
     },
     {
+      "abbr": "",
+      "fullName": "Wireless Networks",
+      "rank": "C",
+      "category": "计算机网络"
+    },
+    {
       "abbr": "IOT",
       "fullName": "IEEE Internet of Things Journal",
+      "rank": "C",
+      "category": "计算机网络"
+    },
+    {
+      "abbr": "TIOT",
+      "fullName": "ACM Transactions on Internet of Things",
       "rank": "C",
       "category": "计算机网络"
     },
@@ -2441,8 +2621,26 @@
       "category": "网络与信息安全"
     },
     {
+      "abbr": "",
+      "fullName": "Journal of Cryptology",
+      "rank": "A",
+      "category": "网络与信息安全"
+    },
+    {
       "abbr": "TOPS",
       "fullName": "ACM Transactions on Privacy and Security",
+      "rank": "B",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "",
+      "fullName": "Computers & Security",
+      "rank": "B",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "",
+      "fullName": "Designs, Codes and Cryptography",
       "rank": "B",
       "category": "网络与信息安全"
     },
@@ -2453,8 +2651,26 @@
       "category": "网络与信息安全"
     },
     {
+      "abbr": "Cybersecurity",
+      "fullName": "Cybersecurity",
+      "rank": "B",
+      "category": "网络与信息安全"
+    },
+    {
       "abbr": "CLSR",
       "fullName": "Computer Law & Security Review",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "",
+      "fullName": "EURASIP Journal on Information Security",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "",
+      "fullName": "IET Information Security",
       "rank": "C",
       "category": "网络与信息安全"
     },
@@ -2485,6 +2701,12 @@
     {
       "abbr": "SCN",
       "fullName": "Security and Communication Networks",
+      "rank": "C",
+      "category": "网络与信息安全"
+    },
+    {
+      "abbr": "HCC",
+      "fullName": "High-Confidence Computing",
       "rank": "C",
       "category": "网络与信息安全"
     },
@@ -2539,6 +2761,12 @@
     {
       "abbr": "JFP",
       "fullName": "Journal of Functional Programming",
+      "rank": "B",
+      "category": "软件工程/系统软件/程序设计语言"
+    },
+    {
+      "abbr": "",
+      "fullName": "Journal of Software: Evolution and Process",
       "rank": "B",
       "category": "软件工程/系统软件/程序设计语言"
     },
@@ -2693,8 +2921,20 @@
       "category": "数据库/数据挖掘/内容检索"
     },
     {
+      "abbr": "",
+      "fullName": "GeoInformatica",
+      "rank": "B",
+      "category": "数据库/数据挖掘/内容检索"
+    },
+    {
       "abbr": "IPM",
       "fullName": "Information Processing and Management",
+      "rank": "B",
+      "category": "数据库/数据挖掘/内容检索"
+    },
+    {
+      "abbr": "",
+      "fullName": "Information Sciences",
       "rank": "B",
       "category": "数据库/数据挖掘/内容检索"
     },
@@ -2719,6 +2959,12 @@
     {
       "abbr": "KAIS",
       "fullName": "Knowledge and Information Systems",
+      "rank": "B",
+      "category": "数据库/数据挖掘/内容检索"
+    },
+    {
+      "abbr": "DSE",
+      "fullName": "Data Science and Engineering",
       "rank": "B",
       "category": "数据库/数据挖掘/内容检索"
     },
@@ -2807,8 +3053,14 @@
       "category": "数据库/数据挖掘/内容检索"
     },
     {
-      "abbr": "DSE",
-      "fullName": "Data Science and Engineering",
+      "abbr": "TIST",
+      "fullName": "ACM Transactions on Intelligent Systems and Technology",
+      "rank": "C",
+      "category": "数据库/数据挖掘/内容检索"
+    },
+    {
+      "abbr": "TORS",
+      "fullName": "ACM Transactions on Recommender Systems",
       "rank": "C",
       "category": "数据库/数据挖掘/内容检索"
     },
@@ -2969,6 +3221,18 @@
       "category": "计算机科学理论"
     },
     {
+      "abbr": "",
+      "fullName": "Theory of Computing Systems",
+      "rank": "C",
+      "category": "计算机科学理论"
+    },
+    {
+      "abbr": "TQC",
+      "fullName": "ACM Transactions in Quantum Computing",
+      "rank": "C",
+      "category": "计算机科学理论"
+    },
+    {
       "abbr": "TOG",
       "fullName": "ACM Transactions on Graphics",
       "rank": "A",
@@ -2983,6 +3247,12 @@
     {
       "abbr": "TVCG",
       "fullName": "IEEE Transactions on Visualization and Computer Graphics",
+      "rank": "A",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "TMM",
+      "fullName": "IEEE Transactions on Multimedia",
       "rank": "A",
       "category": "计算机图形学与多媒体"
     },
@@ -3011,20 +3281,8 @@
       "category": "计算机图形学与多媒体"
     },
     {
-      "abbr": "GM",
-      "fullName": "Graphical Models",
-      "rank": "B",
-      "category": "计算机图形学与多媒体"
-    },
-    {
       "abbr": "TCSVT",
       "fullName": "IEEE Transactions on Circuits and Systems for Video Technology",
-      "rank": "B",
-      "category": "计算机图形学与多媒体"
-    },
-    {
-      "abbr": "TMM",
-      "fullName": "IEEE Transactions on Multimedia",
       "rank": "B",
       "category": "计算机图形学与多媒体"
     },
@@ -3043,6 +3301,12 @@
     {
       "abbr": "SPECOM",
       "fullName": "Speech Communication",
+      "rank": "B",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "CVMJ",
+      "fullName": "Computational Visual Media",
       "rank": "B",
       "category": "计算机图形学与多媒体"
     },
@@ -3119,8 +3383,20 @@
       "category": "计算机图形学与多媒体"
     },
     {
-      "abbr": "CVMJ",
-      "fullName": "Computational Visual Media",
+      "abbr": "VI",
+      "fullName": "Visual Informatics",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "VRIH",
+      "fullName": "Virtual Reality & Intelligent Hardware",
+      "rank": "C",
+      "category": "计算机图形学与多媒体"
+    },
+    {
+      "abbr": "GMOD",
+      "fullName": "Graphical Models",
       "rank": "C",
       "category": "计算机图形学与多媒体"
     },
@@ -3161,6 +3437,12 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Computational Linguistics",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
       "abbr": "CVIU",
       "fullName": "Computer Vision and Image Understanding",
       "rank": "B",
@@ -3173,6 +3455,12 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Evolutionary Computation",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
       "abbr": "TAC",
       "fullName": "IEEE Transactions on Affective Computing",
       "rank": "B",
@@ -3181,6 +3469,12 @@
     {
       "abbr": "TASLP",
       "fullName": "IEEE/ACM Transactions on Audio, Speech and Language Processing",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "IEEE Transactions on Cybernetics",
       "rank": "B",
       "category": "人工智能"
     },
@@ -3215,8 +3509,32 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Journal of Automated Reasoning",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
       "abbr": "JSLHR",
       "fullName": "Journal of Speech, Language, and Hearing Research",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Machine Learning",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Neural Computation",
+      "rank": "B",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Neural Networks",
       "rank": "B",
       "category": "人工智能"
     },
@@ -3239,8 +3557,38 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Applied Intelligence",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "AIM",
       "fullName": "Artificial Intelligence in Medicine",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Artificial Life",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Computational Intelligence",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Computer Speech & Language",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Connection Science",
       "rank": "C",
       "category": "人工智能"
     },
@@ -3257,8 +3605,20 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Expert Systems",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "ESWA",
       "fullName": "Expert Systems with Applications",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Fuzzy Sets and Systems",
       "rank": "C",
       "category": "人工智能"
     },
@@ -3271,6 +3631,12 @@
     {
       "abbr": "IET-CVI",
       "fullName": "IET Computer Vision",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "IET Signal Processing",
       "rank": "C",
       "category": "人工智能"
     },
@@ -3335,6 +3701,24 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Machine Translation",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Machine Vision and Applications",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "",
+      "fullName": "Natural Computing",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "NLE",
       "fullName": "Natural Language Engineering",
       "rank": "C",
@@ -3353,6 +3737,12 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Neurocomputing",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "PAA",
       "fullName": "Pattern Analysis and Applications",
       "rank": "C",
@@ -3365,6 +3755,12 @@
       "category": "人工智能"
     },
     {
+      "abbr": "",
+      "fullName": "Soft Computing",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
       "abbr": "WI",
       "fullName": "Web Intelligence",
       "rank": "C",
@@ -3373,6 +3769,18 @@
     {
       "abbr": "TIIS",
       "fullName": "ACM Transactions on Interactive Intelligent Systems",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "TELO",
+      "fullName": "ACM Transactions on Evolutionary Learning and Optimization",
+      "rank": "C",
+      "category": "人工智能"
+    },
+    {
+      "abbr": "JATS",
+      "fullName": "ACM Journal on Autonomous Transportation Systems",
       "rank": "C",
       "category": "人工智能"
     },
@@ -3401,6 +3809,12 @@
       "category": "人机交互与普适计算"
     },
     {
+      "abbr": "",
+      "fullName": "IEEE Transactions on Human-Machine Systems",
+      "rank": "B",
+      "category": "人机交互与普适计算"
+    },
+    {
       "abbr": "IWC",
       "fullName": "Interacting with Computers",
       "rank": "B",
@@ -3421,6 +3835,12 @@
     {
       "abbr": "TSMC",
       "fullName": "IEEE Transactions on Systems, Man, and Cybernetics: Systems",
+      "rank": "B",
+      "category": "人机交互与普适计算"
+    },
+    {
+      "abbr": "CCF TPCI",
+      "fullName": "CCF Transactions on Pervasive Computing and Interaction",
       "rank": "B",
       "category": "人机交互与普适计算"
     },
@@ -3449,6 +3869,12 @@
       "category": "人机交互与普适计算"
     },
     {
+      "abbr": "THRI",
+      "fullName": "ACM Transactions on Human-Robot Interaction",
+      "rank": "C",
+      "category": "人机交互与普适计算"
+    },
+    {
       "abbr": "JACM",
       "fullName": "Journal of the ACM",
       "rank": "A",
@@ -3464,6 +3890,18 @@
       "abbr": "SCIS",
       "fullName": "Science China Information Sciences",
       "rank": "A",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "Bioinformatics",
+      "fullName": "Bioinformatics",
+      "rank": "A",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "Briefings in Bioinformatics",
+      "rank": "B",
       "category": "交叉/综合/新兴"
     },
     {
@@ -3521,6 +3959,18 @@
       "category": "交叉/综合/新兴"
     },
     {
+      "abbr": "",
+      "fullName": "PLOS Computational Biology",
+      "rank": "B",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "The Computer Journal",
+      "rank": "B",
+      "category": "交叉/综合/新兴"
+    },
+    {
       "abbr": "WWW",
       "fullName": "World Wide Web",
       "rank": "B",
@@ -3530,6 +3980,30 @@
       "abbr": "FCS",
       "fullName": "Frontiers of Computer Science",
       "rank": "B",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "BCRA",
+      "fullName": "Blockchain: Research and Applications",
+      "rank": "B",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "BMC Bioinformatics",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "Cybernetics and Systems",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "IEEE Geoscience and Remote Sensing Letters",
+      "rank": "C",
       "category": "交叉/综合/新兴"
     },
     {
@@ -3545,8 +4019,20 @@
       "category": "交叉/综合/新兴"
     },
     {
+      "abbr": "",
+      "fullName": "IET Intelligent Transport Systems",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
       "abbr": "JBI",
       "fullName": "Journal of Biomedical Informatics",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "Medical Image Analysis",
       "rank": "C",
       "category": "交叉/综合/新兴"
     },
@@ -3577,6 +4063,24 @@
     {
       "abbr": "TCSS",
       "fullName": "IEEE Transactions on Computational Social Systems",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "",
+      "fullName": "IEEE Transactions on Reliability",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "HEALTH",
+      "fullName": "ACM Transactions on Computing for Healthcare",
+      "rank": "C",
+      "category": "交叉/综合/新兴"
+    },
+    {
+      "abbr": "ACM DLT",
+      "fullName": "ACM Distributed Ledger Technologies: Research and Practice",
       "rank": "C",
       "category": "交叉/综合/新兴"
     }

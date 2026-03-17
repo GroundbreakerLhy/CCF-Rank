@@ -7,6 +7,4 @@ export type FluentMessageId =
   | 'pref-enable'
   | 'pref-help'
   | 'pref-input'
-  | 'pref-title'
-  | 'startup-begin'
-  | 'startup-finish';
+  | 'pref-title';

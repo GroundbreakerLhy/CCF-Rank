@@ -7,20 +7,9 @@ Zotero 插件，用于显示文献的 CCF (中国计算机学会) 会议和期�
 - 自动识别文献的 CCF 等级 (A/B/C)
 - 显示 CCF 学科分类
 - 支持手动设置和修改等级
-- 包含完整的 CCF 2022 推荐列表 (362 个会议 + 233 个期刊)
+- 包含完整的 CCF 2026 推荐列表
 
 ## 安装
-
-### 从源码安装
-
-```bash
-git clone https://github.com/GroundbreakerLhy/CCF-Rank.git
-cd CCF-Rank
-npm install
-npm start
-```
-
-开发服务器会自动将插件安装到 Zotero 并在代码修改时自动重新加载。
 
 ### 从发布版安装
 
@@ -52,22 +41,11 @@ npm start
 - publicationTitle
   > **注意：** 由于某些期刊喜欢取顶刊相似名字打擦边球，极易出现误判，因此设计了手动忽略功能。如果用户发现误判，可以将该文献加入忽略列表，插件将不再显示其 CCF 分类。而且都发期刊了谁还看 CCF 啊👉👈
 
-### 匹配策略
-
-1. 精确匹配简称 (如 "CVPR")
-2. 精确匹配全称
-3. 模糊匹配简称 (长度 >= 4 字符)
-4. 模糊匹配全称 (长度 >= 20 字符)
-
 ## 数据更新
 
-CCF 推荐列表存储在 `src/data/ccf-conferences.json`。数据来源于 [CCF 官方网站](https://ccf.atom.im/)。
+CCF 推荐列表存储在 `src/data/ccf-conferences.json`。当前数据根据官方 PDF `中国计算机学会推荐国际学术会议和期刊目录第七版（2026年3月更新）.pdf` 整理为 JSON 后直接随仓库维护。
 
-更新数据：
-
-```bash
-python scripts/build-ccf-db.py
-```
+官方链接：[中国计算机学会推荐国际学术会议和期刊目录](https://www.ccf.org.cn/Academic_Evaluation/By_category/)。推荐便捷查询[网站](https://ccf.atom.im/)。
 
 ## 开发
 
@@ -80,9 +58,8 @@ CCF-Rank/
 │   │   └── ccfRank.ts
 │   ├── data/
 │   │   └── ccf-conferences.json
+│   │   └── 中国计算机学会推荐国际学术会议和期刊目录第七版（2026年3月更新）.pdf
 │   └── hooks.ts
-├── scripts/
-│   └── build-ccf-db.py
 └── addon/
     └── locale/
 ```
