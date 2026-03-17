@@ -836,7 +836,7 @@ export class CCFRankFactory {
    */
   static registerRightClickMenu() {
     // 注册 CCF 等级设置菜单
-    ztoolkit.Menu.register("item", {
+    (ztoolkit as any).Menu.register("item", {
       tag: "menu",
       label: "设置 CCF 等级",
       children: [
