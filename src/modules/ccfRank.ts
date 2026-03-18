@@ -541,7 +541,7 @@ class CCFRankService {
    * @param item Zotero 文献条目
    * @returns CCF 条目信息或 null（未找到）
    */
-  private getEntryFromItem(item: Zotero.Item): CCFEntry | null {
+  getEntryFromItem(item: Zotero.Item): CCFEntry | null {
     if (!item) return null;
 
     try {
@@ -622,6 +622,83 @@ class CCFRankService {
 
 // 单例
 const ccfService = new CCFRankService();
+
+/**
+ * CCF 结果缓存服务
+ * 将匹配结果持久化到 Zotero Extra 字段，避免每次渲染重新计算
+ */
+class CCFCacheService {
+  private static readonly RANK_KEY = "CCF-Rank:";
+  private static readonly CATEGORY_KEY = "CCF-Category:";
+  private static readonly ABBR_KEY = "CCF-Abbr:";
+
+  static readFromExtra(item: Zotero.Item): {
+    rank: string;
+    category: string;
+    abbr: string;
+  } | null {
+    try {
+      const extra = (item.getField("extra") as string) || "";
+      const rankMatch = extra.match(/^CCF-Rank:\s*(.+)$/m);
+      if (!rankMatch) return null;
+      const categoryMatch = extra.match(/^CCF-Category:\s*(.+)$/m);
+      const abbrMatch = extra.match(/^CCF-Abbr:\s*(.+)$/m);
+      return {
+        rank: rankMatch[1].trim(),
+        category: categoryMatch ? categoryMatch[1].trim() : "",
+        abbr: abbrMatch ? abbrMatch[1].trim() : "",
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  static async writeToExtra(
+    item: Zotero.Item,
+    entry: CCFEntry,
+  ): Promise<void> {
+    try {
+      let extra = (item.getField("extra") as string) || "";
+      extra = this.removeCCFLines(extra);
+      const ccfLines = [
+        `${this.RANK_KEY} ${entry.rank}`,
+        `${this.CATEGORY_KEY} ${entry.category}`,
+        `${this.ABBR_KEY} ${entry.abbr}`,
+      ].join("\n");
+      extra = extra ? `${ccfLines}\n${extra}` : ccfLines;
+      item.setField("extra", extra);
+      await item.saveTx();
+    } catch (e) {
+      safeLog("[CCF Cache] Error writing to Extra:", e);
+    }
+  }
+
+  static async clearFromExtra(item: Zotero.Item): Promise<void> {
+    try {
+      const extra = (item.getField("extra") as string) || "";
+      const cleaned = this.removeCCFLines(extra);
+      if (cleaned !== extra) {
+        item.setField("extra", cleaned);
+        await item.saveTx();
+      }
+    } catch (e) {
+      safeLog("[CCF Cache] Error clearing Extra:", e);
+    }
+  }
+
+  private static removeCCFLines(extra: string): string {
+    return extra
+      .split("\n")
+      .filter(
+        (line) =>
+          !line.startsWith(this.RANK_KEY) &&
+          !line.startsWith(this.CATEGORY_KEY) &&
+          !line.startsWith(this.ABBR_KEY),
+      )
+      .join("\n")
+      .trim();
+  }
+}
 
 /**
  * 手动 CCF 等级管理服务
@@ -769,16 +846,11 @@ export class CCFRankFactory {
       dataKey: "ccfRank",
       label: "CCF 等级",
       dataProvider: (item: Zotero.Item, dataKey: string) => {
-        // 如果在忽略列表中，不显示任何等级
-        if (manualRankService.isIgnored(item.id)) {
-          return "";
-        }
-        // 优先使用手动设置的等级
+        if (manualRankService.isIgnored(item.id)) return "";
         const manualRank = manualRankService.getRank(item.id);
-        if (manualRank) {
-          return manualRank;
-        }
-        // 否则使用数据库匹配结果
+        if (manualRank) return manualRank;
+        const cached = CCFCacheService.readFromExtra(item);
+        if (cached) return cached.rank;
         return ccfService.getRankFromItem(item) || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
@@ -805,10 +877,9 @@ export class CCFRankFactory {
       dataKey: "ccfCategory",
       label: "CCF 分类",
       dataProvider: (item: Zotero.Item, dataKey: string) => {
-        // 如果在忽略列表中，不显示分类
-        if (manualRankService.isIgnored(item.id)) {
-          return "";
-        }
+        if (manualRankService.isIgnored(item.id)) return "";
+        const cached = CCFCacheService.readFromExtra(item);
+        if (cached) return cached.category;
         return ccfService.getCategoryFromItem(item) || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
@@ -942,5 +1013,76 @@ export class CCFRankFactory {
     }
 
     safeLog(`[CCF Manual] Ignored ${items.length} items`);
+  }
+
+  private static notifierID: string | null = null;
+
+  /**
+   * 注册 Zotero 通知监听器，在导入条目时自动查询 CCF 等级
+   */
+  static registerNotifier() {
+    const callback = {
+      notify: (
+        event: string,
+        type: string,
+        ids: (string | number)[],
+        extraData: Record<string, any>,
+      ) => {
+        if (event === "add" && type === "item") {
+          // 延迟处理，等 Zotero 完成元数据填充
+          setTimeout(() => {
+            this.autoLookupByIds(ids as number[]);
+          }, 10000);
+        }
+      },
+    };
+
+    this.notifierID = Zotero.Notifier.registerObserver(callback, ["item"]);
+    safeLog("[CCF] Notifier registered");
+  }
+
+  /**
+   * 注销通知监听器
+   */
+  static unregisterNotifier() {
+    if (this.notifierID) {
+      Zotero.Notifier.unregisterObserver(this.notifierID);
+      this.notifierID = null;
+    }
+  }
+
+  /**
+   * 根据 ID 列表自动查询 CCF 等级
+   */
+  private static async autoLookupByIds(ids: number[]) {
+    const items = Zotero.Items.get(ids).filter(
+      (item: Zotero.Item) => item.isRegularItem(),
+    );
+    if (items.length === 0) return;
+    await this.autoLookupItems(items);
+  }
+
+  /**
+   * 对条目列表执行自动 CCF 查询（本地匹配 + DBLP fallback）
+   */
+  static async autoLookupItems(items: Zotero.Item[]) {
+    for (const item of items) {
+      if (manualRankService.hasManualRank(item.id)) continue;
+      if (manualRankService.isIgnored(item.id)) continue;
+      if (CCFCacheService.readFromExtra(item)) continue;
+
+      const entry = ccfService.getEntryFromItem(item);
+      if (entry) {
+        await CCFCacheService.writeToExtra(item, entry);
+      }
+    }
+
+    // 刷新列表显示
+    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
+    if (itemsView) {
+      (itemsView as any).refreshAndMaintainSelection();
+    }
+
+    safeLog(`[CCF] Auto-lookup completed for ${items.length} items`);
   }
 }

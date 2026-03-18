@@ -13,6 +13,7 @@ async function onStartup() {
   initLocale();
 
   await CCFRankFactory.registerCCFColumn();
+  CCFRankFactory.registerNotifier();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -37,6 +38,7 @@ async function onMainWindowUnload(win: Window): Promise<void> {
 }
 
 function onShutdown(): void {
+  CCFRankFactory.unregisterNotifier();
   ztoolkit.unregisterAll();
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed
