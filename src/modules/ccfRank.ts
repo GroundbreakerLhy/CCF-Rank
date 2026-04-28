@@ -120,9 +120,7 @@ class CCFRankService {
 
   private tokenizeMeaningful(input: string): Set<string> {
     return new Set(
-      input
-        .split(" ")
-        .filter((x) => this.isMeaningfulToken(x.toLowerCase())),
+      input.split(" ").filter((x) => this.isMeaningfulToken(x.toLowerCase())),
     );
   }
 
@@ -152,7 +150,9 @@ class CCFRankService {
     }
 
     // Match forms like: ASPLOS '20: ...
-    const yearStyle = input.match(/^\s*([A-Za-z][A-Za-z0-9+/-]{1,})\s*['’]\d{2,4}\b/);
+    const yearStyle = input.match(
+      /^\s*([A-Za-z][A-Za-z0-9+/-]{1,})\s*['’]\d{2,4}\b/,
+    );
     if (yearStyle) {
       candidates.add(this.normalizeAbbr(yearStyle[1]));
     }
@@ -162,7 +162,12 @@ class CCFRankService {
 
   private classifyInputHint(normalizedInput: string): EntryKind | null {
     const words = new Set(normalizedInput.split(" "));
-    const conferenceHints = ["conference", "symposium", "workshop", "proceedings"];
+    const conferenceHints = [
+      "conference",
+      "symposium",
+      "workshop",
+      "proceedings",
+    ];
     const journalHints = ["journal", "transactions", "letters"];
 
     const hasConferenceHint = conferenceHints.some((x) => words.has(x));
@@ -324,7 +329,10 @@ class CCFRankService {
 
   private buildIndexes() {
     const allEntries: Array<{ entry: CCFEntry; kind: EntryKind }> = [
-      ...this.conferences.map((entry) => ({ entry, kind: "conference" as const })),
+      ...this.conferences.map((entry) => ({
+        entry,
+        kind: "conference" as const,
+      })),
       ...this.journals.map((entry) => ({ entry, kind: "journal" as const })),
     ];
 
@@ -341,7 +349,8 @@ class CCFRankService {
         aliases,
       };
 
-      const fullNameEntries = this.exactFullNameMap.get(normalizedFullName) || [];
+      const fullNameEntries =
+        this.exactFullNameMap.get(normalizedFullName) || [];
       fullNameEntries.push(indexed);
       this.exactFullNameMap.set(normalizedFullName, fullNameEntries);
 
@@ -418,7 +427,9 @@ class CCFRankService {
     const leadingToken = stripped.match(/^([A-Za-z][A-Za-z0-9+/-]{1,})\b/);
     if (leadingToken) {
       const tokenKey = this.normalizeAbbr(leadingToken[1]);
-      if (!new Set(["ACM", "IEEE", "INTERNATIONAL", "PROCEEDINGS"]).has(tokenKey)) {
+      if (
+        !new Set(["ACM", "IEEE", "INTERNATIONAL", "PROCEEDINGS"]).has(tokenKey)
+      ) {
         abbrCandidates = this.exactAbbrMap.get(tokenKey) || [];
         picked = this.pickBestCandidate(
           abbrCandidates,
@@ -463,7 +474,8 @@ class CCFRankService {
         inputTokens,
         indexed,
       );
-      const hintedKind = preferredKind || this.classifyInputHint(normalizedInput);
+      const hintedKind =
+        preferredKind || this.classifyInputHint(normalizedInput);
       const adjusted =
         hintedKind && indexed.kind === hintedKind ? score + 120 : score;
       if (adjusted > bestScore) {
@@ -653,10 +665,7 @@ class CCFCacheService {
     }
   }
 
-  static async writeToExtra(
-    item: Zotero.Item,
-    entry: CCFEntry,
-  ): Promise<void> {
+  static async writeToExtra(item: Zotero.Item, entry: CCFEntry): Promise<void> {
     try {
       let extra = (item.getField("extra") as string) || "";
       extra = this.removeCCFLines(extra);
@@ -856,15 +865,13 @@ export class CCFRankFactory {
       renderCell(index, data, column, isFirstColumn, doc) {
         const span = doc.createElement("span");
         span.className = `cell ${column.className}`;
-        span.style.textAlign = "center";
 
         if (data) {
           span.innerText = data;
-          span.style.fontWeight = "bold";
-          span.style.color = "#000000";
+          span.classList.add("ccf-rank-cell");
         } else {
           span.innerText = "-";
-          span.style.color = "#9ca3af";
+          span.classList.add("ccf-rank-cell", "ccf-rank-cell-empty");
         }
 
         return span;
@@ -885,14 +892,13 @@ export class CCFRankFactory {
       renderCell(index, data, column, isFirstColumn, doc) {
         const span = doc.createElement("span");
         span.className = `cell ${column.className}`;
-        span.style.fontSize = "11px";
 
         if (data) {
           span.innerText = data;
-          span.style.color = "#000000";
+          span.classList.add("ccf-category-cell");
         } else {
           span.innerText = "-";
-          span.style.color = "#9ca3af";
+          span.classList.add("ccf-category-cell", "ccf-category-cell-empty");
         }
 
         return span;
@@ -1055,8 +1061,8 @@ export class CCFRankFactory {
    * 根据 ID 列表自动查询 CCF 等级
    */
   private static async autoLookupByIds(ids: number[]) {
-    const items = Zotero.Items.get(ids).filter(
-      (item: Zotero.Item) => item.isRegularItem(),
+    const items = Zotero.Items.get(ids).filter((item: Zotero.Item) =>
+      item.isRegularItem(),
     );
     if (items.length === 0) return;
     await this.autoLookupItems(items);

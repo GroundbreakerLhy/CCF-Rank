@@ -1,3 +1,43 @@
+/* Light mode styles */
+.ccf-rank-cell {
+  text-align: center;
+  font-weight: bold;
+  color: #000000;
+}
+
+.ccf-rank-cell-empty {
+  color: #9ca3af;
+}
+
+.ccf-category-cell {
+  font-size: 11px;
+  color: #000000;
+}
+
+.ccf-category-cell-empty {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .ccf-rank-cell {
+    color: #ffffff;
+  }
+
+  .ccf-rank-cell-empty {
+    color: #6b7280;
+  }
+
+  .ccf-category-cell {
+    color: #ffffff;
+  }
+
+  .ccf-category-cell-empty {
+    color: #6b7280;
+  }
+}
+
 .makeItRed {
   background-color: tomato;
 }
