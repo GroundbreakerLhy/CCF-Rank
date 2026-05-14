@@ -16,3 +16,4 @@ build
 logs
 claude.md
 .claude/
+.vscode/

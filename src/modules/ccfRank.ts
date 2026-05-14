@@ -854,6 +854,8 @@ export class CCFRankFactory {
       pluginID: addon.data.config.addonID,
       dataKey: "ccfRank",
       label: "CCF 等级",
+      width: "75",
+      fixedWidth: true,
       dataProvider: (item: Zotero.Item, dataKey: string) => {
         if (manualRankService.isIgnored(item.id)) return "";
         const manualRank = manualRankService.getRank(item.id);
@@ -865,6 +867,10 @@ export class CCFRankFactory {
       renderCell(index, data, column, isFirstColumn, doc) {
         const span = doc.createElement("span");
         span.className = `cell ${column.className}`;
+        span.style.display = "flex";
+        span.style.width = "100%";
+        span.style.justifyContent = "center";
+        span.style.alignItems = "center";
 
         if (data) {
           span.innerText = data;

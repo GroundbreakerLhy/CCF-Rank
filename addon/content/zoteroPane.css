@@ -1,5 +1,7 @@
 /* Light mode styles */
 .ccf-rank-cell {
+  display: block;
+  width: 100%;
   text-align: center;
   font-weight: bold;
   color: #000000;
