@@ -30,7 +30,7 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
-  CCFRankFactory.registerRightClickMenu();
+  CCFRankFactory.registerRightClickMenu(win);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {

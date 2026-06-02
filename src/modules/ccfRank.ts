@@ -8,12 +8,8 @@ import ccfData from "../data/ccf-conferences.json";
  * 安全的日志输出函数
  */
 function safeLog(...args: any[]) {
-  try {
-    if (typeof addon !== "undefined" && addon?.data?.ztoolkit?.log) {
-      addon.data.ztoolkit.log(...args);
-    }
-  } catch (e) {
-    // 忽略日志错误
+  if (typeof addon !== "undefined" && addon?.data?.ztoolkit?.log) {
+    addon.data.ztoolkit.log(...args);
   }
 }
 
@@ -239,8 +235,10 @@ class CCFRankService {
         score = Math.max(score, 900 + Math.min(50, alias.length));
       }
 
+      // 子串包含 — 降低分值避免误匹配（如 cryptographic 包含 crypto 误匹配 CRYPTO）
+      // 必须配合其他得分（如 token overlap 或类型偏好）才能跨过 760 阈值
       if (lowerAlias.length >= 4 && normalizedInput.includes(lowerAlias)) {
-        score = Math.max(score, 820 + Math.min(30, alias.length));
+        score = Math.max(score, 650 + Math.min(30, alias.length));
       }
     }
 
@@ -364,18 +362,6 @@ class CCFRankService {
     });
   }
 
-  /**
-   * 查询会议/期刊的 CCF 信息
-   *
-   * 匹配策略（按优先级）：
-   * 1. 精确匹配简称（如 "CVPR"）
-   * 2. 精确匹配全称（如 "IEEE Conference on Computer Vision and Pattern Recognition"）
-   * 3. 模糊匹配简称（输入包含简称，如 "CVPR 2024" 包含 "CVPR"）
-   * 4. 模糊匹配全称（输入包含全称，如长会议名称的部分匹配）
-   *
-   * @param name 会议或期刊的名称
-   * @returns CCF 条目信息或 null（未找到）
-   */
   getEntry(name: string, preferredKind?: EntryKind): CCFEntry | null {
     if (!name) return null;
 
@@ -498,358 +484,291 @@ class CCFRankService {
     return null;
   }
 
-  /**
-   * 查询会议的 CCF 等级（兼容旧接口）
-   * @param name 会议或期刊的名称
-   * @returns CCF 等级（A/B/C）或 null（未找到）
-   */
   getRank(name: string): string | null {
     const entry = this.getEntry(name);
     return entry ? entry.rank : null;
   }
 
-  /**
-   * 从 Zotero 条目中查询 CCF 等级
-   *
-   * 字段提取策略（按文献类型）：
-   *
-   * 【会议论文 conferencePaper】
-   * 优先级：proceedingsTitle > publicationTitle > conferenceName
-   * - proceedingsTitle: IEEE/ACM 导入的论文通常只有这个字段有完整会议名
-   * - publicationTitle: 部分导入工具会填充这个字段
-   * - conferenceName: 备用字段
-   *
-   * 【期刊论文 journalArticle】
-   * - publicationTitle: 期刊名称
-   *
-   * 【通用备用方案】
-   * - 从文章标题（title）中提取括号内的会议简称（如 "Paper Title (CVPR)"）
-   *
-   * @param item Zotero 文献条目
-   * @returns CCF 等级（A/B/C）或 null（未找到）
-   */
   getRankFromItem(item: Zotero.Item): string | null {
     const entry = this.getEntryFromItem(item);
     return entry ? entry.rank : null;
   }
 
-  /**
-   * 从 Zotero 条目中获取 CCF 分类
-   *
-   * 获取逻辑与 getRankFromItem() 一致，但返回分类信息而非等级
-   * 分类示例："计算机网络"、"人工智能"、"软件工程" 等
-   *
-   * @param item Zotero 文献条目
-   * @returns CCF 分类字符串或 null（未找到）
-   */
   getCategoryFromItem(item: Zotero.Item): string | null {
     const entry = this.getEntryFromItem(item);
     return entry ? entry.category : null;
   }
 
-  /**
-   * 从 Zotero 条目中获取 CCF 条目信息（内部方法）
-   *
-   * @param item Zotero 文献条目
-   * @returns CCF 条目信息或 null（未找到）
-   */
   getEntryFromItem(item: Zotero.Item): CCFEntry | null {
     if (!item) return null;
 
-    try {
-      const itemType = item.itemType;
-      safeLog(`[CCF] Processing item type: ${itemType}`);
+    const itemType = item.itemType;
 
-      // 策略 1: 会议论文 - 按优先级依次尝试三个字段
-      if (itemType === "conferencePaper") {
-        // 1.1 优先检查 proceedingsTitle（最可靠的字段）
-        // 很多 IEEE/ACM 论文导入后只有这个字段包含完整会议名称
-        const proceedingsTitle = item.getField("proceedingsTitle") as string;
-        safeLog(
-          `[CCF] Conference paper proceedingsTitle: "${proceedingsTitle}"`,
-        );
-        if (proceedingsTitle) {
-          const entry = this.getEntry(proceedingsTitle, "conference");
-          if (entry) return entry;
-        }
-
-        // 1.2 尝试 publicationTitle（部分导入工具使用此字段）
-        const publicationTitle = item.getField("publicationTitle") as string;
-        safeLog(
-          `[CCF] Conference paper publicationTitle: "${publicationTitle}"`,
-        );
-        if (publicationTitle) {
-          const entry = this.getEntry(publicationTitle, "conference");
-          if (entry) return entry;
-        }
-
-        // 1.3 尝试 conferenceName（手动输入或特定导入工具使用）
-        const conferenceName = item.getField("conferenceName") as string;
-        safeLog(`[CCF] Conference paper conferenceName: "${conferenceName}"`);
-        if (conferenceName) {
-          const entry = this.getEntry(conferenceName, "conference");
-          if (entry) return entry;
-        }
-      }
-
-      // 策略 2: 期刊论文 - 从 publicationTitle 获取期刊名
-      if (itemType === "journalArticle") {
-        const publicationTitle = item.getField("publicationTitle") as string;
-        safeLog(
-          `[CCF] Journal article publicationTitle: "${publicationTitle}"`,
-        );
-        if (publicationTitle) {
-          const entry = this.getEntry(publicationTitle, "journal");
-          if (entry) return entry;
-        }
-      }
-
-      // 策略 3: 通用兜底 - 尝试 publicationTitle（适用于其他文献类型）
-      const publicationTitle = item.getField("publicationTitle") as string;
-      safeLog(`[CCF] Generic publicationTitle: "${publicationTitle}"`);
-      if (publicationTitle) {
-        const entry = this.getEntry(publicationTitle);
+    if (itemType === "conferencePaper") {
+      const proceedingsTitle = item.getField("proceedingsTitle") as string;
+      if (proceedingsTitle) {
+        const entry = this.getEntry(proceedingsTitle, "conference");
         if (entry) return entry;
       }
 
-      // 策略 4: 从文章标题中提取会议简称（最后的备用方案）
-      // 适用场景：标题格式为 "Paper Title (CVPR)" 或 "Paper Title (AAAI'21)"
-      const title = item.getField("title") as string;
-      if (title) {
-        // 正则匹配：括号内的大写字母+可选的年份标记
-        const match = title.match(/\(([A-Z]+['']?\d*)\)/);
-        if (match) {
-          // 移除年份标记，只保留简称（如 "AAAI'21" -> "AAAI"）
-          const entry = this.getEntry(match[1].replace(/[''].*/, ""));
-          if (entry) return entry;
-        }
+      const publicationTitle = item.getField("publicationTitle") as string;
+      if (publicationTitle) {
+        const entry = this.getEntry(publicationTitle, "conference");
+        if (entry) return entry;
       }
-    } catch (e) {
-      safeLog("Error getting CCF rank:", e);
+
+      const conferenceName = item.getField("conferenceName") as string;
+      if (conferenceName) {
+        const entry = this.getEntry(conferenceName, "conference");
+        if (entry) return entry;
+      }
+    }
+
+    if (itemType === "journalArticle") {
+      const publicationTitle = item.getField("publicationTitle") as string;
+      if (publicationTitle) {
+        const entry = this.getEntry(publicationTitle, "journal");
+        if (entry) return entry;
+      }
+    }
+
+    const publicationTitle = item.getField("publicationTitle") as string;
+    if (publicationTitle) {
+      const entry = this.getEntry(publicationTitle);
+      if (entry) return entry;
+    }
+
+    const title = item.getField("title") as string;
+    if (title) {
+      const match = title.match(/\(([A-Z]+['']?\d*)\)/);
+      if (match) {
+        const entry = this.getEntry(match[1].replace(/[''].*/, ""));
+        if (entry) return entry;
+      }
     }
 
     return null;
   }
 }
 
-// 单例
 const ccfService = new CCFRankService();
 
 /**
- * CCF 结果缓存服务
- * 将匹配结果持久化到 Zotero Extra 字段，避免每次渲染重新计算
+ * CCF 条目数据：每条记录只有一种 mode，互斥
+ * - auto:    自动匹配结果
+ * - manual:  用户手动设置
+ * - ignored: 用户选择忽略
  */
-class CCFCacheService {
-  private static readonly RANK_KEY = "CCF-Rank:";
-  private static readonly CATEGORY_KEY = "CCF-Category:";
-  private static readonly ABBR_KEY = "CCF-Abbr:";
-
-  static readFromExtra(item: Zotero.Item): {
-    rank: string;
-    category: string;
-    abbr: string;
-  } | null {
-    try {
-      const extra = (item.getField("extra") as string) || "";
-      const rankMatch = extra.match(/^CCF-Rank:\s*(.+)$/m);
-      if (!rankMatch) return null;
-      const categoryMatch = extra.match(/^CCF-Category:\s*(.+)$/m);
-      const abbrMatch = extra.match(/^CCF-Abbr:\s*(.+)$/m);
-      return {
-        rank: rankMatch[1].trim(),
-        category: categoryMatch ? categoryMatch[1].trim() : "",
-        abbr: abbrMatch ? abbrMatch[1].trim() : "",
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  static async writeToExtra(item: Zotero.Item, entry: CCFEntry): Promise<void> {
-    try {
-      let extra = (item.getField("extra") as string) || "";
-      extra = this.removeCCFLines(extra);
-      const ccfLines = [
-        `${this.RANK_KEY} ${entry.rank}`,
-        `${this.CATEGORY_KEY} ${entry.category}`,
-        `${this.ABBR_KEY} ${entry.abbr}`,
-      ].join("\n");
-      extra = extra ? `${ccfLines}\n${extra}` : ccfLines;
-      item.setField("extra", extra);
-      await item.saveTx();
-    } catch (e) {
-      safeLog("[CCF Cache] Error writing to Extra:", e);
-    }
-  }
-
-  static async clearFromExtra(item: Zotero.Item): Promise<void> {
-    try {
-      const extra = (item.getField("extra") as string) || "";
-      const cleaned = this.removeCCFLines(extra);
-      if (cleaned !== extra) {
-        item.setField("extra", cleaned);
-        await item.saveTx();
-      }
-    } catch (e) {
-      safeLog("[CCF Cache] Error clearing Extra:", e);
-    }
-  }
-
-  private static removeCCFLines(extra: string): string {
-    return extra
-      .split("\n")
-      .filter(
-        (line) =>
-          !line.startsWith(this.RANK_KEY) &&
-          !line.startsWith(this.CATEGORY_KEY) &&
-          !line.startsWith(this.ABBR_KEY),
-      )
-      .join("\n")
-      .trim();
-  }
+interface ItemCCFData {
+  mode: "auto" | "manual" | "ignored";
+  rank: string;
+  category: string;
+  abbr: string;
 }
 
-/**
- * 手动 CCF 等级管理服务
- * 存储用户手动设置的 CCF 等级，优先级高于数据库匹配结果
- */
-class ManualCCFRankService {
-  private storageKey = "extensions.ccfRank.manualRanks";
-  private ignoreKey = "extensions.ccfRank.ignoreItems";
-  private cache: Map<number, string> = new Map();
-  private ignoreSet: Set<number> = new Set();
+interface ItemDataStore {
+  version: number;
+  items: Record<number, ItemCCFData>;
+}
+
+const DATA_STORAGE_KEY = "extensions.ccfRank.itemData";
+const DATA_VERSION = 1;
+
+class UnifiedCCFDataService {
+  private cache: Map<number, ItemCCFData> = new Map();
 
   constructor() {
-    this.loadFromStorage();
+    this.load();
+    this.migrate();
   }
 
-  /**
-   * 从 Zotero 偏好设置加载手动设置的等级和忽略列表
-   */
-  private loadFromStorage() {
-    try {
-      // 加载手动设置的等级
-      const stored = Zotero.Prefs.get(this.storageKey, true) as string;
-      if (stored) {
-        const data = JSON.parse(stored);
-        this.cache = new Map(
-          Object.entries(data).map(([k, v]) => [parseInt(k), v as string]),
-        );
-        safeLog(
-          `[CCF Manual] Loaded ${this.cache.size} manual ranks from storage`,
-        );
+  private load() {
+    const raw = Zotero.Prefs.get(DATA_STORAGE_KEY, true) as string;
+    if (!raw) return;
+    const store: ItemDataStore = JSON.parse(raw);
+    if (store.version === DATA_VERSION && store.items) {
+      for (const [idStr, entry] of Object.entries(store.items)) {
+        this.cache.set(parseInt(idStr), entry as ItemCCFData);
       }
+    }
+    safeLog(`[CCF Data] Loaded ${this.cache.size} items`);
+  }
 
-      // 加载忽略列表
-      const ignoredStr = Zotero.Prefs.get(this.ignoreKey, true) as string;
-      if (ignoredStr) {
-        const ignoredIds = JSON.parse(ignoredStr);
-        this.ignoreSet = new Set(ignoredIds);
-        safeLog(
-          `[CCF Manual] Loaded ${this.ignoreSet.size} ignored items from storage`,
-        );
+  private save() {
+    const store: ItemDataStore = {
+      version: DATA_VERSION,
+      items: Object.fromEntries(this.cache),
+    };
+    Zotero.Prefs.set(DATA_STORAGE_KEY, JSON.stringify(store), true);
+  }
+
+  private migrate() {
+    const oldRanks = Zotero.Prefs.get(
+      "extensions.ccfRank.manualRanks", true) as string;
+    const oldCats = Zotero.Prefs.get(
+      "extensions.ccfRank.manualCategories", true) as string;
+    const oldIgnore = Zotero.Prefs.get(
+      "extensions.ccfRank.ignoreItems", true) as string;
+
+    if (!oldRanks && !oldCats && !oldIgnore) return;
+
+    safeLog("[CCF Data] Migrating old format...");
+
+    if (oldRanks) {
+      const rankData = JSON.parse(oldRanks);
+      let catData: Record<string, string> = {};
+      if (oldCats) {
+        catData = JSON.parse(oldCats);
       }
-    } catch (e) {
-      safeLog("[CCF Manual] Error loading from storage:", e);
+      for (const [idStr, rank] of Object.entries(rankData)) {
+        const id = parseInt(idStr);
+        if (!this.cache.has(id)) {
+          this.cache.set(id, {
+            mode: "manual", rank: rank as string,
+            category: catData[idStr] || "", abbr: "",
+          });
+        }
+      }
     }
-  }
 
-  /**
-   * 保存到 Zotero 偏好设置
-   */
-  private saveToStorage() {
-    try {
-      // 保存手动设置的等级
-      const obj: Record<number, string> = {};
-      this.cache.forEach((value, key) => {
-        obj[key] = value;
-      });
-      Zotero.Prefs.set(this.storageKey, JSON.stringify(obj), true);
-
-      // 保存忽略列表
-      const ignoredIds = Array.from(this.ignoreSet);
-      Zotero.Prefs.set(this.ignoreKey, JSON.stringify(ignoredIds), true);
-
-      safeLog(
-        `[CCF Manual] Saved ${this.cache.size} manual ranks and ${this.ignoreSet.size} ignored items`,
-      );
-    } catch (e) {
-      safeLog("[CCF Manual] Error saving to storage:", e);
+    if (oldCats) {
+      const catData = JSON.parse(oldCats);
+      for (const [idStr, category] of Object.entries(catData)) {
+        const id = parseInt(idStr);
+        if (!this.cache.has(id)) {
+          this.cache.set(id, {
+            mode: "manual", rank: "",
+            category: category as string, abbr: "",
+          });
+        }
+      }
     }
+
+    if (oldIgnore) {
+      const ignoreData = JSON.parse(oldIgnore) as number[];
+      for (const id of ignoreData) {
+        if (!this.cache.has(id)) {
+          this.cache.set(id, {
+            mode: "ignored", rank: "", category: "", abbr: "",
+          });
+        }
+      }
+    }
+
+    Zotero.Prefs.set("extensions.ccfRank.manualRanks", "", true);
+    Zotero.Prefs.set("extensions.ccfRank.manualCategories", "", true);
+    Zotero.Prefs.set("extensions.ccfRank.ignoreItems", "", true);
+
+    this.save();
+    safeLog(`[CCF Data] Migration done, ${this.cache.size} items`);
   }
 
-  /**
-   * 设置条目的手动 CCF 等级
-   * @param itemID 条目 ID
-   * @param rank CCF 等级（A/B/C）
-   */
-  setRank(itemID: number, rank: "A" | "B" | "C") {
-    this.cache.set(itemID, rank);
-    this.ignoreSet.delete(itemID);
-    this.saveToStorage();
-    safeLog(`[CCF Manual] Set item ${itemID} to rank ${rank}`);
+  getItemData(itemID: number): ItemCCFData | undefined {
+    return this.cache.get(itemID);
   }
 
-  /**
-   * 获取条目的手动 CCF 等级
-   * @param itemID 条目 ID
-   * @returns 手动设置的等级，如果没有手动设置则返回 null
-   */
-  getRank(itemID: number): string | null {
-    return this.cache.get(itemID) || null;
-  }
-
-  /**
-   * 清除条目的手动 CCF 等级
-   * @param itemID 条目 ID
-   */
-  clearRank(itemID: number) {
-    this.cache.delete(itemID);
-    this.ignoreSet.delete(itemID);
-    this.saveToStorage();
-    safeLog(`[CCF Manual] Cleared manual rank for item ${itemID}`);
-  }
-
-  /**
-   * 检查条目是否有手动设置的等级
-   * @param itemID 条目 ID
-   */
-  hasManualRank(itemID: number): boolean {
-    return this.cache.has(itemID);
-  }
-
-  /**
-   * 将条目加入忽略列表（不显示自动匹配的等级）
-   * @param itemID 条目 ID
-   */
-  ignoreItem(itemID: number) {
-    this.ignoreSet.add(itemID);
-    this.cache.delete(itemID); // 加入忽略时移除手动设置
-    this.saveToStorage();
-    safeLog(`[CCF Manual] Added item ${itemID} to ignore list`);
-  }
-
-  /**
-   * 检查条目是否在忽略列表中
-   * @param itemID 条目 ID
-   */
   isIgnored(itemID: number): boolean {
-    return this.ignoreSet.has(itemID);
+    return this.cache.get(itemID)?.mode === "ignored";
+  }
+
+  setAuto(itemID: number, rank: string, category: string, abbr: string) {
+    const existing = this.cache.get(itemID);
+    if (existing && existing.mode !== "auto") return;
+    this.cache.set(itemID, { mode: "auto", rank, category, abbr });
+    this.save();
+  }
+
+  setManualRank(itemID: number, rank: string) {
+    const existing = this.cache.get(itemID);
+    const category = existing?.mode === "manual" ? existing.category : "";
+    this.cache.set(itemID, { mode: "manual", rank, category, abbr: "" });
+    this.save();
+  }
+
+  setManualCategory(itemID: number, category: string) {
+    const existing = this.cache.get(itemID);
+    const rank = existing?.mode === "manual" ? existing.rank : "";
+    this.cache.set(itemID, { mode: "manual", rank, category, abbr: "" });
+    this.save();
+  }
+
+  clearManualRank(itemID: number) {
+    const existing = this.cache.get(itemID);
+    if (existing?.mode !== "manual") return;
+    if (existing.category) {
+      existing.rank = "";
+      this.save();
+    } else {
+      this.clearManual(itemID);
+    }
+  }
+
+  clearManualCategory(itemID: number) {
+    const existing = this.cache.get(itemID);
+    if (existing?.mode !== "manual") return;
+    if (existing.rank) {
+      existing.category = "";
+      this.save();
+    } else {
+      this.clearManual(itemID);
+    }
+  }
+
+  clearManual(itemID: number) {
+    this.cache.delete(itemID);
+    const item = Zotero.Items.get(itemID);
+    if (item?.isRegularItem()) {
+      const entry = ccfService.getEntryFromItem(item as Zotero.Item);
+      if (entry) {
+        this.cache.set(itemID, {
+          mode: "auto", rank: entry.rank,
+          category: entry.category, abbr: entry.abbr,
+        });
+      }
+    }
+    this.save();
+  }
+
+  ignoreItem(itemID: number) {
+    this.cache.set(itemID, { mode: "ignored", rank: "", category: "", abbr: "" });
+    this.save();
+  }
+
+  unignoreItem(itemID: number) {
+    this.cache.delete(itemID);
+    const item = Zotero.Items.get(itemID);
+    if (item?.isRegularItem()) {
+      const entry = ccfService.getEntryFromItem(item as Zotero.Item);
+      if (entry) {
+        this.cache.set(itemID, {
+          mode: "auto", rank: entry.rank,
+          category: entry.category, abbr: entry.abbr,
+        });
+      }
+    }
+    this.save();
+  }
+
+  needsAutoDetect(itemID: number): boolean {
+    return !this.cache.has(itemID);
   }
 }
 
-// 手动等级服务单例
-const manualRankService = new ManualCCFRankService();
+const dataService = new UnifiedCCFDataService();
+
+const CCF_CATEGORIES = Array.from(
+  new Set(
+    [...(ccfData as any).conferences, ...(ccfData as any).journals]
+      .map((entry: CCFEntry) => entry.category)
+      .filter((category: string) => category && category.trim()),
+  ),
+).sort((a, b) => a.localeCompare(b, "zh-CN"));
 
 /**
  * CCF 等级列工厂
  */
 export class CCFRankFactory {
-  /**
-   * 注册 CCF 等级列
-   */
   static async registerCCFColumn() {
-    // 注册 CCF 等级列
     await Zotero.ItemTreeManager.registerColumns({
       pluginID: addon.data.config.addonID,
       dataKey: "ccfRank",
@@ -857,12 +776,10 @@ export class CCFRankFactory {
       width: "75",
       fixedWidth: true,
       dataProvider: (item: Zotero.Item, dataKey: string) => {
-        if (manualRankService.isIgnored(item.id)) return "";
-        const manualRank = manualRankService.getRank(item.id);
-        if (manualRank) return manualRank;
-        const cached = CCFCacheService.readFromExtra(item);
-        if (cached) return cached.rank;
-        return ccfService.getRankFromItem(item) || "";
+        const d = dataService.getItemData(item.id);
+        if (!d) return ccfService.getRankFromItem(item) || "";
+        if (d.mode === "ignored") return "";
+        return d.rank || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
         const span = doc.createElement("span");
@@ -884,16 +801,15 @@ export class CCFRankFactory {
       },
     });
 
-    // 注册 CCF 分类列
     await Zotero.ItemTreeManager.registerColumns({
       pluginID: addon.data.config.addonID,
       dataKey: "ccfCategory",
       label: "CCF 分类",
       dataProvider: (item: Zotero.Item, dataKey: string) => {
-        if (manualRankService.isIgnored(item.id)) return "";
-        const cached = CCFCacheService.readFromExtra(item);
-        if (cached) return cached.category;
-        return ccfService.getCategoryFromItem(item) || "";
+        const d = dataService.getItemData(item.id);
+        if (!d) return ccfService.getCategoryFromItem(item) || "";
+        if (d.mode === "ignored") return "";
+        return d.category || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
         const span = doc.createElement("span");
@@ -914,124 +830,281 @@ export class CCFRankFactory {
     safeLog("CCF Rank columns registered successfully");
   }
 
-  /**
-   * 注册右键菜单项，用于手动设置 CCF 等级
-   */
-  static registerRightClickMenu() {
-    // 注册 CCF 等级设置菜单
-    (ztoolkit as any).Menu.register("item", {
-      tag: "menu",
-      label: "设置 CCF 等级",
-      children: [
-        {
-          tag: "menuitem",
-          label: "A",
-          commandListener: () => this.setManualRank("A"),
-        },
-        {
-          tag: "menuitem",
-          label: "B",
-          commandListener: () => this.setManualRank("B"),
-        },
-        {
-          tag: "menuitem",
-          label: "C",
-          commandListener: () => this.setManualRank("C"),
-        },
-        {
-          tag: "menuseparator",
-        },
-        {
-          tag: "menuitem",
-          label: "清除手动设置",
-          commandListener: () => this.clearManualRank(),
-        },
-        {
-          tag: "menuitem",
-          label: "忽略此条目（不显示等级）",
-          commandListener: () => this.ignoreItems(),
-        },
-      ],
+  static registerRightClickMenu(win: _ZoteroTypes.MainWindow) {
+    const doc = win.document;
+    const menu = doc.getElementById("zotero-itemmenu");
+    if (!menu) {
+      safeLog("[CCF Manual] Item context menu not found");
+      return;
+    }
+
+    const existing = doc.getElementById("ccf-info-menu");
+    if (existing) return;
+
+    const menuNode = doc.createXULElement("menu");
+    menuNode.setAttribute("id", "ccf-info-menu");
+    menuNode.setAttribute("label", "设置 CCF 信息");
+
+    const popup = doc.createXULElement("menupopup");
+    menuNode.appendChild(popup);
+
+    const addItem = (
+      targetPopup: Element,
+      label: string,
+      onCommand: () => void,
+      options?: { type?: string },
+    ) => {
+      const item = doc.createXULElement("menuitem");
+      item.setAttribute("label", label);
+      if (options?.type) {
+        item.setAttribute("type", options.type);
+      }
+      item.addEventListener("command", onCommand);
+      targetPopup.appendChild(item);
+      return item;
+    };
+
+    const rankMenu = doc.createXULElement("menu");
+    rankMenu.setAttribute("id", "ccf-rank-menu");
+    rankMenu.setAttribute("label", "设置 CCF 等级");
+    const rankPopup = doc.createXULElement("menupopup");
+    rankMenu.appendChild(rankPopup);
+    popup.appendChild(rankMenu);
+
+    const rankItems: Record<"A" | "B" | "C", Element> = {
+      A: addItem(rankPopup, "A", () => this.setManualRank("A"), {
+        type: "checkbox",
+      }),
+      B: addItem(rankPopup, "B", () => this.setManualRank("B"), {
+        type: "checkbox",
+      }),
+      C: addItem(rankPopup, "C", () => this.setManualRank("C"), {
+        type: "checkbox",
+      }),
+    };
+
+    const separator = doc.createXULElement("menuseparator");
+    rankPopup.appendChild(separator);
+
+    addItem(rankPopup, "清除手动设置", () => this.clearManualRank());
+    const categoryMenu = doc.createXULElement("menu");
+    categoryMenu.setAttribute("id", "ccf-category-menu");
+    categoryMenu.setAttribute("label", "设置 CCF 分类");
+    const categoryPopup = doc.createXULElement("menupopup");
+    categoryMenu.appendChild(categoryPopup);
+    popup.appendChild(categoryMenu);
+
+    const categoryItems = new Map<string, Element>();
+    CCF_CATEGORIES.forEach((category) => {
+      const item = doc.createXULElement("menuitem");
+      item.setAttribute("label", category);
+      item.setAttribute("type", "checkbox");
+      item.addEventListener("command", () => this.setManualCategory(category));
+      categoryPopup.appendChild(item);
+      categoryItems.set(category, item);
     });
 
+    const categorySeparator = doc.createXULElement("menuseparator");
+    categoryPopup.appendChild(categorySeparator);
+    const clearCategoryItem = doc.createXULElement("menuitem");
+    clearCategoryItem.setAttribute("label", "清除手动分类");
+    clearCategoryItem.addEventListener("command", () =>
+      this.clearManualCategory(),
+    );
+    categoryPopup.appendChild(clearCategoryItem);
+    const ignoreItem = addItem(
+      popup,
+      "忽略此条目（不显示等级）",
+      () => this.toggleIgnoreItems(),
+      { type: "checkbox" },
+    );
+
+    popup.addEventListener("popupshowing", () => {
+      const items = Zotero.getActiveZoteroPane()?.getSelectedItems() || [];
+      let selectedRank: "A" | "B" | "C" | null = null;
+      let selectedCategory: string | null = null;
+      let rankMixed = false;
+      let categoryMixed = false;
+      let ignoreState: boolean | null = null;
+
+      for (const item of items) {
+        const d = dataService.getItemData(item.id);
+        const rank =
+          d?.mode === "manual" && d.rank
+            ? (d.rank as "A" | "B" | "C")
+            : null;
+        const category =
+          d?.mode === "manual" && d.category ? d.category : null;
+        const ignored = d?.mode === "ignored";
+
+        if (!rankMixed) {
+          if (!rank) {
+            selectedRank = null;
+            rankMixed = true;
+          } else if (!selectedRank) {
+            selectedRank = rank;
+          } else if (selectedRank !== rank) {
+            selectedRank = null;
+            rankMixed = true;
+          }
+        }
+
+        if (!categoryMixed) {
+          if (!category) {
+            selectedCategory = null;
+            categoryMixed = true;
+          } else if (!selectedCategory) {
+            selectedCategory = category;
+          } else if (selectedCategory !== category) {
+            selectedCategory = null;
+            categoryMixed = true;
+          }
+        }
+
+        if (ignoreState === null) {
+          ignoreState = ignored;
+        } else if (ignoreState !== ignored) {
+          ignoreState = null;
+        }
+      }
+
+      (Object.keys(rankItems) as Array<keyof typeof rankItems>).forEach(
+        (key) => {
+          if (selectedRank === key) {
+            rankItems[key].setAttribute("checked", "true");
+          } else {
+            rankItems[key].removeAttribute("checked");
+          }
+        },
+      );
+
+      categoryItems.forEach((item, category) => {
+        if (selectedCategory === category) {
+          item.setAttribute("checked", "true");
+        } else {
+          item.removeAttribute("checked");
+        }
+      });
+
+      if (ignoreState) {
+        ignoreItem.setAttribute("checked", "true");
+      } else {
+        ignoreItem.removeAttribute("checked");
+      }
+    });
+
+    menu.appendChild(menuNode);
     safeLog("CCF Rank right-click menu registered successfully");
   }
 
-  /**
-   * 为选中的条目设置手动 CCF 等级
-   * @param rank CCF 等级（A/B/C）
-   */
   static setManualRank(rank: "A" | "B" | "C") {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) {
-      safeLog("[CCF Manual] No items selected");
-      return;
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      dataService.setManualRank(item.id, rank);
     }
 
-    items.forEach((item) => {
-      manualRankService.setRank(item.id, rank);
-    });
-
-    // 刷新列表显示
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
     if (itemsView) {
       (itemsView as any).refreshAndMaintainSelection();
     }
 
-    safeLog(`[CCF Manual] Set rank ${rank} for ${items.length} items`);
+    safeLog(`[CCF] Set rank ${rank} for ${items.length} items`);
   }
 
-  /**
-   * 清除选中条目的手动 CCF 等级
-   */
   static clearManualRank() {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) {
-      safeLog("[CCF Manual] No items selected");
-      return;
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      dataService.clearManualRank(item.id);
     }
 
-    items.forEach((item) => {
-      manualRankService.clearRank(item.id);
-    });
-
-    // 刷新列表显示
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
     if (itemsView) {
       (itemsView as any).refreshAndMaintainSelection();
     }
 
-    safeLog(`[CCF Manual] Cleared manual rank for ${items.length} items`);
+    safeLog(`[CCF] Cleared manual rank for ${items.length} items`);
   }
 
-  /**
-   * 忽略选中的条目（不显示自动匹配的等级）
-   */
-  static ignoreItems() {
+  static setManualCategory(category: string) {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) {
-      safeLog("[CCF Manual] No items selected");
-      return;
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      dataService.setManualCategory(item.id, category);
     }
 
-    items.forEach((item) => {
-      manualRankService.ignoreItem(item.id);
-    });
-
-    // 刷新列表显示
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
     if (itemsView) {
       (itemsView as any).refreshAndMaintainSelection();
     }
 
-    safeLog(`[CCF Manual] Ignored ${items.length} items`);
+    safeLog(`[CCF] Set category ${category} for ${items.length} items`);
+  }
+
+  static clearManualCategory() {
+    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      dataService.clearManualCategory(item.id);
+    }
+
+    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
+    if (itemsView) {
+      (itemsView as any).refreshAndMaintainSelection();
+    }
+
+    safeLog(`[CCF] Cleared manual category for ${items.length} items`);
+  }
+
+  static ignoreItems() {
+    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
+    if (!items || items.length === 0) return;
+
+    for (const item of items) {
+      dataService.ignoreItem(item.id);
+    }
+
+    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
+    if (itemsView) {
+      (itemsView as any).refreshAndMaintainSelection();
+    }
+
+    safeLog(`[CCF] Ignored ${items.length} items`);
+  }
+
+  static toggleIgnoreItems() {
+    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
+    if (!items || items.length === 0) return;
+
+    const allIgnored = items.every((item) =>
+      dataService.isIgnored(item.id),
+    );
+
+    for (const item of items) {
+      if (allIgnored) {
+        dataService.unignoreItem(item.id);
+      } else {
+        dataService.ignoreItem(item.id);
+      }
+    }
+
+    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
+    if (itemsView) {
+      (itemsView as any).refreshAndMaintainSelection();
+    }
+
+    safeLog(
+      `[CCF] ${allIgnored ? "Unignored" : "Ignored"} ${items.length} items`,
+    );
   }
 
   private static notifierID: string | null = null;
 
-  /**
-   * 注册 Zotero 通知监听器，在导入条目时自动查询 CCF 等级
-   */
   static registerNotifier() {
     const callback = {
       notify: (
@@ -1053,9 +1126,6 @@ export class CCFRankFactory {
     safeLog("[CCF] Notifier registered");
   }
 
-  /**
-   * 注销通知监听器
-   */
   static unregisterNotifier() {
     if (this.notifierID) {
       Zotero.Notifier.unregisterObserver(this.notifierID);
@@ -1063,9 +1133,6 @@ export class CCFRankFactory {
     }
   }
 
-  /**
-   * 根据 ID 列表自动查询 CCF 等级
-   */
   private static async autoLookupByIds(ids: number[]) {
     const items = Zotero.Items.get(ids).filter((item: Zotero.Item) =>
       item.isRegularItem(),
@@ -1074,22 +1141,16 @@ export class CCFRankFactory {
     await this.autoLookupItems(items);
   }
 
-  /**
-   * 对条目列表执行自动 CCF 查询（本地匹配 + DBLP fallback）
-   */
   static async autoLookupItems(items: Zotero.Item[]) {
     for (const item of items) {
-      if (manualRankService.hasManualRank(item.id)) continue;
-      if (manualRankService.isIgnored(item.id)) continue;
-      if (CCFCacheService.readFromExtra(item)) continue;
+      if (!dataService.needsAutoDetect(item.id)) continue;
 
       const entry = ccfService.getEntryFromItem(item);
       if (entry) {
-        await CCFCacheService.writeToExtra(item, entry);
+        dataService.setAuto(item.id, entry.rank, entry.category, entry.abbr);
       }
     }
 
-    // 刷新列表显示
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
     if (itemsView) {
       (itemsView as any).refreshAndMaintainSelection();
