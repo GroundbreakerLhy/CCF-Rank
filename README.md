@@ -16,8 +16,8 @@ Zotero 插件，用于自动显示文献的 CCF（中国计算机学会）会议
 ## 安装
 
 1. 从 [Releases](https://github.com/GroundbreakerLhy/CCF-Rank/releases) 页面下载最新的 `.xpi` 文件
-2. 打开 Zotero → 工具 → 附加组件
-3. 点击右上角齿轮图标 → Install Add-on From File
+2. 打开 Zotero → 工具 → 插件
+3. 点击右上角齿轮图标 → Install Plugin From File
 4. 选择下载的 `.xpi` 文件
 
 ## 使用方法
