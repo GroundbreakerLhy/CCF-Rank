@@ -64,6 +64,7 @@ const GENERIC_TOKENS = new Set([
 const INVALID_ABBRS = new Set([
   "DBLP",
   "INTERNATIONAL",
+  "NETWORKING",
   "PROCEEDINGS",
   "SYMPOSIUM",
   "CONFERENCE",
