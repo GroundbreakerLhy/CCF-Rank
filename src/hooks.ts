@@ -2,6 +2,7 @@ import { initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 import { CCFRankFactory } from "./modules/ccfRank";
+import { showUpdateDialogIfNeeded } from "./modules/update";
 
 async function onStartup() {
   await Promise.all([
@@ -18,6 +19,8 @@ async function onStartup() {
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
   );
+
+  showUpdateDialogIfNeeded();
 
   addon.data.initialized = true;
 }

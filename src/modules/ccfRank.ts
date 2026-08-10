@@ -500,6 +500,11 @@ class CCFRankService {
     return entry ? entry.category : null;
   }
 
+  getAbbrFromItem(item: Zotero.Item): string | null {
+    const entry = this.getEntryFromItem(item);
+    return entry ? entry.abbr : null;
+  }
+
   getEntryFromItem(item: Zotero.Item): CCFEntry | null {
     if (!item) return null;
 
@@ -555,16 +560,13 @@ class CCFRankService {
 const ccfService = new CCFRankService();
 
 /**
- * CCF 条目数据：每条记录只有一种 mode，互斥
- * - auto:    自动匹配结果
- * - manual:  用户手动设置
- * - ignored: 用户选择忽略
+ * CCF 条目数据：自动匹配结果，ignored 表示用户选择忽略
  */
 interface ItemCCFData {
-  mode: "auto" | "manual" | "ignored";
   rank: string;
   category: string;
   abbr: string;
+  ignored: boolean;
 }
 
 interface ItemDataStore {
@@ -583,13 +585,26 @@ class UnifiedCCFDataService {
     this.migrate();
   }
 
+  private normalizeLegacy(entry: any): ItemCCFData {
+    if (entry.ignored || entry.mode === "ignored") {
+      return { rank: "", category: "", abbr: "", ignored: true };
+    }
+    // 旧 manual/auto 数据统一转为普通数据，不再有手动语义
+    return {
+      rank: entry.rank || "",
+      category: entry.category || "",
+      abbr: entry.abbr || "",
+      ignored: false,
+    };
+  }
+
   private load() {
     const raw = Zotero.Prefs.get(DATA_STORAGE_KEY, true) as string;
     if (!raw) return;
     const store: ItemDataStore = JSON.parse(raw);
-    if (store.version === DATA_VERSION && store.items) {
+    if (store.items) {
       for (const [idStr, entry] of Object.entries(store.items)) {
-        this.cache.set(parseInt(idStr), entry as ItemCCFData);
+        this.cache.set(parseInt(idStr), this.normalizeLegacy(entry));
       }
     }
     safeLog(`[CCF Data] Loaded ${this.cache.size} items`);
@@ -625,8 +640,10 @@ class UnifiedCCFDataService {
         const id = parseInt(idStr);
         if (!this.cache.has(id)) {
           this.cache.set(id, {
-            mode: "manual", rank: rank as string,
-            category: catData[idStr] || "", abbr: "",
+            rank: rank as string,
+            category: catData[idStr] || "",
+            abbr: "",
+            ignored: false,
           });
         }
       }
@@ -638,8 +655,8 @@ class UnifiedCCFDataService {
         const id = parseInt(idStr);
         if (!this.cache.has(id)) {
           this.cache.set(id, {
-            mode: "manual", rank: "",
-            category: category as string, abbr: "",
+            rank: "", category: category as string,
+            abbr: "", ignored: false,
           });
         }
       }
@@ -650,7 +667,7 @@ class UnifiedCCFDataService {
       for (const id of ignoreData) {
         if (!this.cache.has(id)) {
           this.cache.set(id, {
-            mode: "ignored", rank: "", category: "", abbr: "",
+            rank: "", category: "", abbr: "", ignored: true,
           });
         }
       }
@@ -669,69 +686,29 @@ class UnifiedCCFDataService {
   }
 
   isIgnored(itemID: number): boolean {
-    return this.cache.get(itemID)?.mode === "ignored";
+    return this.cache.get(itemID)?.ignored === true;
   }
 
   setAuto(itemID: number, rank: string, category: string, abbr: string) {
-    const existing = this.cache.get(itemID);
-    if (existing && existing.mode !== "auto") return;
-    this.cache.set(itemID, { mode: "auto", rank, category, abbr });
+    if (this.cache.has(itemID)) return;
+    this.cache.set(itemID, { rank, category, abbr, ignored: false });
     this.save();
   }
 
-  setManualRank(itemID: number, rank: string) {
-    const existing = this.cache.get(itemID);
-    const category = existing?.mode === "manual" ? existing.category : "";
-    this.cache.set(itemID, { mode: "manual", rank, category, abbr: "" });
-    this.save();
-  }
-
-  setManualCategory(itemID: number, category: string) {
-    const existing = this.cache.get(itemID);
-    const rank = existing?.mode === "manual" ? existing.rank : "";
-    this.cache.set(itemID, { mode: "manual", rank, category, abbr: "" });
-    this.save();
-  }
-
-  clearManualRank(itemID: number) {
-    const existing = this.cache.get(itemID);
-    if (existing?.mode !== "manual") return;
-    if (existing.category) {
-      existing.rank = "";
-      this.save();
-    } else {
-      this.clearManual(itemID);
-    }
-  }
-
-  clearManualCategory(itemID: number) {
-    const existing = this.cache.get(itemID);
-    if (existing?.mode !== "manual") return;
-    if (existing.rank) {
-      existing.category = "";
-      this.save();
-    } else {
-      this.clearManual(itemID);
-    }
-  }
-
-  clearManual(itemID: number) {
-    this.cache.delete(itemID);
-    const item = Zotero.Items.get(itemID);
-    if (item?.isRegularItem()) {
-      const entry = ccfService.getEntryFromItem(item as Zotero.Item);
-      if (entry) {
-        this.cache.set(itemID, {
-          mode: "auto", rank: entry.rank,
-          category: entry.category, abbr: entry.abbr,
-        });
-      }
-    }
+  setManualAbbr(itemID: number, entry: CCFEntry) {
+    this.cache.set(itemID, {
+      rank: entry.rank,
+      category: entry.category,
+      abbr: entry.abbr,
+      ignored: false,
+    });
     this.save();
   }
 
   ignoreItem(itemID: number) {
-    this.cache.set(itemID, { mode: "ignored", rank: "", category: "", abbr: "" });
+    this.cache.set(itemID, {
+      rank: "", category: "", abbr: "", ignored: true,
+    });
     this.save();
   }
 
@@ -742,12 +719,18 @@ class UnifiedCCFDataService {
       const entry = ccfService.getEntryFromItem(item as Zotero.Item);
       if (entry) {
         this.cache.set(itemID, {
-          mode: "auto", rank: entry.rank,
-          category: entry.category, abbr: entry.abbr,
+          rank: entry.rank,
+          category: entry.category,
+          abbr: entry.abbr,
+          ignored: false,
         });
       }
     }
     this.save();
+  }
+
+  resetAuto(itemID: number) {
+    this.unignoreItem(itemID);
   }
 
   needsAutoDetect(itemID: number): boolean {
@@ -757,13 +740,48 @@ class UnifiedCCFDataService {
 
 const dataService = new UnifiedCCFDataService();
 
-const CCF_CATEGORIES = Array.from(
-  new Set(
-    [...(ccfData as any).conferences, ...(ccfData as any).journals]
-      .map((entry: CCFEntry) => entry.category)
-      .filter((category: string) => category && category.trim()),
-  ),
-).sort((a, b) => a.localeCompare(b, "zh-CN"));
+/**
+ * 按 类型→分类 分组的简称菜单数据，重复简称用全称标注区分
+ */
+const CCF_ABBR_GROUPS: Array<{
+  kind: "conference" | "journal";
+  categories: Array<{
+    category: string;
+    items: Array<{ label: string; entry: CCFEntry }>;
+  }>;
+}> = (() => {
+  const all = [
+    ...(ccfData as any).conferences,
+    ...(ccfData as any).journals,
+  ] as CCFEntry[];
+  const seenCount = new Map<string, number>();
+  for (const entry of all) {
+    seenCount.set(entry.abbr, (seenCount.get(entry.abbr) || 0) + 1);
+  }
+  const groupByKind = (kind: "conference" | "journal") => {
+    const groups = new Map<string, Array<{ label: string; entry: CCFEntry }>>();
+    const entries = kind === "conference"
+      ? (ccfData as any).conferences
+      : (ccfData as any).journals;
+    for (const entry of entries as CCFEntry[]) {
+      const label = entry.abbr
+        ? (seenCount.get(entry.abbr) || 0) > 1
+          ? `${entry.abbr} (${entry.fullName})`
+          : entry.abbr
+        : entry.fullName;
+      const list = groups.get(entry.category) || [];
+      list.push({ label, entry });
+      groups.set(entry.category, list);
+    }
+    return Array.from(groups.entries())
+      .map(([category, items]) => ({ category, items }))
+      .sort((a, b) => a.category.localeCompare(b.category, "zh-CN"));
+  };
+  return [
+    { kind: "conference" as const, categories: groupByKind("conference") },
+    { kind: "journal" as const, categories: groupByKind("journal") },
+  ];
+})();
 
 /**
  * CCF 等级列工厂
@@ -779,7 +797,7 @@ export class CCFRankFactory {
       dataProvider: (item: Zotero.Item, dataKey: string) => {
         const d = dataService.getItemData(item.id);
         if (!d) return ccfService.getRankFromItem(item) || "";
-        if (d.mode === "ignored") return "";
+        if (d.ignored) return "";
         return d.rank || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
@@ -809,7 +827,7 @@ export class CCFRankFactory {
       dataProvider: (item: Zotero.Item, dataKey: string) => {
         const d = dataService.getItemData(item.id);
         if (!d) return ccfService.getCategoryFromItem(item) || "";
-        if (d.mode === "ignored") return "";
+        if (d.ignored) return "";
         return d.category || "";
       },
       renderCell(index, data, column, isFirstColumn, doc) {
@@ -828,6 +846,32 @@ export class CCFRankFactory {
       },
     });
 
+    await Zotero.ItemTreeManager.registerColumns({
+      pluginID: addon.data.config.addonID,
+      dataKey: "ccfAbbr",
+      label: "CCF 简称",
+      dataProvider: (item: Zotero.Item, dataKey: string) => {
+        const d = dataService.getItemData(item.id);
+        if (!d) return ccfService.getAbbrFromItem(item) || "";
+        if (d.ignored) return "";
+        return d.abbr || "";
+      },
+      renderCell(index, data, column, isFirstColumn, doc) {
+        const span = doc.createElement("span");
+        span.className = `cell ${column.className}`;
+
+        if (data) {
+          span.innerText = data;
+          span.classList.add("ccf-abbr-cell");
+        } else {
+          span.innerText = "-";
+          span.classList.add("ccf-abbr-cell", "ccf-abbr-cell-empty");
+        }
+
+        return span;
+      },
+    });
+
     safeLog("CCF Rank columns registered successfully");
   }
 
@@ -835,7 +879,7 @@ export class CCFRankFactory {
     const doc = win.document;
     const menu = doc.getElementById("zotero-itemmenu");
     if (!menu) {
-      safeLog("[CCF Manual] Item context menu not found");
+      safeLog("[CCF] Item context menu not found");
       return;
     }
 
@@ -844,153 +888,105 @@ export class CCFRankFactory {
 
     const menuNode = doc.createXULElement("menu");
     menuNode.setAttribute("id", "ccf-info-menu");
-    menuNode.setAttribute("label", "设置 CCF 信息");
+    menuNode.setAttribute("label", "CCF 选项");
 
     const popup = doc.createXULElement("menupopup");
     menuNode.appendChild(popup);
 
-    const addItem = (
-      targetPopup: Element,
-      label: string,
-      onCommand: () => void,
-      options?: { type?: string },
-    ) => {
-      const item = doc.createXULElement("menuitem");
-      item.setAttribute("label", label);
-      if (options?.type) {
-        item.setAttribute("type", options.type);
+    // 设置 CCF 简称：按分类分组，选择后 rank/category 自动带出
+    const abbrMenu = doc.createXULElement("menu");
+    abbrMenu.setAttribute("id", "ccf-abbr-menu");
+    abbrMenu.setAttribute("label", "设置 CCF 简称");
+    const abbrPopup = doc.createXULElement("menupopup");
+    abbrMenu.appendChild(abbrPopup);
+    popup.appendChild(abbrMenu);
+
+    const abbrItems = new Map<string, Element[]>();
+    for (const group of CCF_ABBR_GROUPS) {
+      const kindMenu = doc.createXULElement("menu");
+      kindMenu.setAttribute("label", group.kind === "conference" ? "会议" : "期刊");
+      const kindPopup = doc.createXULElement("menupopup");
+      kindMenu.appendChild(kindPopup);
+      for (const cat of group.categories) {
+        const catMenu = doc.createXULElement("menu");
+        catMenu.setAttribute("label", cat.category);
+        const catPopup = doc.createXULElement("menupopup");
+        catMenu.appendChild(catPopup);
+        // 按 A/B/C 排序，等级切换处分隔
+        const rankOrder: Record<string, number> = { A: 0, B: 1, C: 2 };
+        const sorted = [...cat.items].sort(
+          (a, b) =>
+            (rankOrder[a.entry.rank] ?? 9) - (rankOrder[b.entry.rank] ?? 9),
+        );
+        let prevRank: string | null = null;
+        for (const { label, entry } of sorted) {
+          if (prevRank !== null && entry.rank !== prevRank) {
+            catPopup.appendChild(doc.createXULElement("menuseparator"));
+          }
+          prevRank = entry.rank;
+          const item = doc.createXULElement("menuitem");
+          item.setAttribute("label", label);
+          item.setAttribute("type", "checkbox");
+          item.addEventListener("command", () =>
+            this.setManualAbbrFromMenu(entry),
+          );
+          catPopup.appendChild(item);
+          const list = abbrItems.get(entry.abbr) || [];
+          list.push(item);
+          abbrItems.set(entry.abbr, list);
+        }
+        kindPopup.appendChild(catMenu);
       }
-      item.addEventListener("command", onCommand);
-      targetPopup.appendChild(item);
-      return item;
-    };
+      abbrPopup.appendChild(kindMenu);
+    }
 
-    const rankMenu = doc.createXULElement("menu");
-    rankMenu.setAttribute("id", "ccf-rank-menu");
-    rankMenu.setAttribute("label", "设置 CCF 等级");
-    const rankPopup = doc.createXULElement("menupopup");
-    rankMenu.appendChild(rankPopup);
-    popup.appendChild(rankMenu);
-
-    const rankItems: Record<"A" | "B" | "C", Element> = {
-      A: addItem(rankPopup, "A", () => this.setManualRank("A"), {
-        type: "checkbox",
-      }),
-      B: addItem(rankPopup, "B", () => this.setManualRank("B"), {
-        type: "checkbox",
-      }),
-      C: addItem(rankPopup, "C", () => this.setManualRank("C"), {
-        type: "checkbox",
-      }),
-    };
+    const resetItem = doc.createXULElement("menuitem");
+    resetItem.setAttribute("label", "恢复自动匹配");
+    resetItem.addEventListener("command", () => this.resetAutoFromMenu());
+    popup.appendChild(resetItem);
 
     const separator = doc.createXULElement("menuseparator");
-    rankPopup.appendChild(separator);
+    popup.appendChild(separator);
 
-    addItem(rankPopup, "清除手动设置", () => this.clearManualRank());
-    const categoryMenu = doc.createXULElement("menu");
-    categoryMenu.setAttribute("id", "ccf-category-menu");
-    categoryMenu.setAttribute("label", "设置 CCF 分类");
-    const categoryPopup = doc.createXULElement("menupopup");
-    categoryMenu.appendChild(categoryPopup);
-    popup.appendChild(categoryMenu);
-
-    const categoryItems = new Map<string, Element>();
-    CCF_CATEGORIES.forEach((category) => {
-      const item = doc.createXULElement("menuitem");
-      item.setAttribute("label", category);
-      item.setAttribute("type", "checkbox");
-      item.addEventListener("command", () => this.setManualCategory(category));
-      categoryPopup.appendChild(item);
-      categoryItems.set(category, item);
-    });
-
-    const categorySeparator = doc.createXULElement("menuseparator");
-    categoryPopup.appendChild(categorySeparator);
-    const clearCategoryItem = doc.createXULElement("menuitem");
-    clearCategoryItem.setAttribute("label", "清除手动分类");
-    clearCategoryItem.addEventListener("command", () =>
-      this.clearManualCategory(),
-    );
-    categoryPopup.appendChild(clearCategoryItem);
-    const ignoreItem = addItem(
-      popup,
-      "忽略此条目（不显示等级）",
-      () => this.toggleIgnoreItems(),
-      { type: "checkbox" },
-    );
+    const ignoreItem = doc.createXULElement("menuitem");
+    ignoreItem.setAttribute("label", "忽略此条目（不显示等级）");
+    ignoreItem.setAttribute("type", "checkbox");
+    ignoreItem.addEventListener("command", () => this.toggleIgnoreItems());
+    popup.appendChild(ignoreItem);
 
     popup.addEventListener("popupshowing", () => {
       const items = Zotero.getActiveZoteroPane()?.getSelectedItems() || [];
-      let selectedRank: "A" | "B" | "C" | null = null;
-      let selectedCategory: string | null = null;
-      let rankMixed = false;
-      let categoryMixed = false;
-      let ignoreState: boolean | null = null;
-
-      for (const item of items) {
-        const d = dataService.getItemData(item.id);
-        const rank =
-          d?.mode === "manual" && d.rank
-            ? (d.rank as "A" | "B" | "C")
-            : null;
-        const category =
-          d?.mode === "manual" && d.category ? d.category : null;
-        const ignored = d?.mode === "ignored";
-
-        if (!rankMixed) {
-          if (!rank) {
-            selectedRank = null;
-            rankMixed = true;
-          } else if (!selectedRank) {
-            selectedRank = rank;
-          } else if (selectedRank !== rank) {
-            selectedRank = null;
-            rankMixed = true;
-          }
-        }
-
-        if (!categoryMixed) {
-          if (!category) {
-            selectedCategory = null;
-            categoryMixed = true;
-          } else if (!selectedCategory) {
-            selectedCategory = category;
-          } else if (selectedCategory !== category) {
-            selectedCategory = null;
-            categoryMixed = true;
-          }
-        }
-
-        if (ignoreState === null) {
-          ignoreState = ignored;
-        } else if (ignoreState !== ignored) {
-          ignoreState = null;
-        }
-      }
-
-      (Object.keys(rankItems) as Array<keyof typeof rankItems>).forEach(
-        (key) => {
-          if (selectedRank === key) {
-            rankItems[key].setAttribute("checked", "true");
-          } else {
-            rankItems[key].removeAttribute("checked");
-          }
-        },
+      const allIgnored = items.every((item) =>
+        dataService.isIgnored(item.id),
       );
 
-      categoryItems.forEach((item, category) => {
-        if (selectedCategory === category) {
-          item.setAttribute("checked", "true");
-        } else {
-          item.removeAttribute("checked");
-        }
-      });
-
-      if (ignoreState) {
+      if (allIgnored) {
         ignoreItem.setAttribute("checked", "true");
       } else {
         ignoreItem.removeAttribute("checked");
+      }
+
+      // 全部选中条目 abbr 一致时勾选对应菜单项
+      let currentAbbr: string | null = null;
+      const firstData =
+        items.length > 0 ? dataService.getItemData(items[0].id) : undefined;
+      if (
+        firstData &&
+        !firstData.ignored &&
+        firstData.abbr &&
+        items.every(
+          (item) => dataService.getItemData(item.id)?.abbr === firstData.abbr,
+        )
+      ) {
+        currentAbbr = firstData.abbr;
+      }
+
+      for (const [abbr, elements] of abbrItems) {
+        if (currentAbbr === abbr) {
+          elements.forEach((el) => el.setAttribute("checked", "true"));
+        } else {
+          elements.forEach((el) => el.removeAttribute("checked"));
+        }
       }
     });
 
@@ -998,12 +994,12 @@ export class CCFRankFactory {
     safeLog("CCF Rank right-click menu registered successfully");
   }
 
-  static setManualRank(rank: "A" | "B" | "C") {
+  static setManualAbbrFromMenu(entry: CCFEntry) {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
     if (!items || items.length === 0) return;
 
     for (const item of items) {
-      dataService.setManualRank(item.id, rank);
+      dataService.setManualAbbr(item.id, entry);
     }
 
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
@@ -1011,15 +1007,15 @@ export class CCFRankFactory {
       (itemsView as any).refreshAndMaintainSelection();
     }
 
-    safeLog(`[CCF] Set rank ${rank} for ${items.length} items`);
+    safeLog(`[CCF] Set abbr ${entry.abbr} for ${items.length} items`);
   }
 
-  static clearManualRank() {
+  static resetAutoFromMenu() {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
     if (!items || items.length === 0) return;
 
     for (const item of items) {
-      dataService.clearManualRank(item.id);
+      dataService.resetAuto(item.id);
     }
 
     const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
@@ -1027,55 +1023,7 @@ export class CCFRankFactory {
       (itemsView as any).refreshAndMaintainSelection();
     }
 
-    safeLog(`[CCF] Cleared manual rank for ${items.length} items`);
-  }
-
-  static setManualCategory(category: string) {
-    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) return;
-
-    for (const item of items) {
-      dataService.setManualCategory(item.id, category);
-    }
-
-    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
-    if (itemsView) {
-      (itemsView as any).refreshAndMaintainSelection();
-    }
-
-    safeLog(`[CCF] Set category ${category} for ${items.length} items`);
-  }
-
-  static clearManualCategory() {
-    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) return;
-
-    for (const item of items) {
-      dataService.clearManualCategory(item.id);
-    }
-
-    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
-    if (itemsView) {
-      (itemsView as any).refreshAndMaintainSelection();
-    }
-
-    safeLog(`[CCF] Cleared manual category for ${items.length} items`);
-  }
-
-  static ignoreItems() {
-    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
-    if (!items || items.length === 0) return;
-
-    for (const item of items) {
-      dataService.ignoreItem(item.id);
-    }
-
-    const itemsView = Zotero.getActiveZoteroPane()?.itemsView;
-    if (itemsView) {
-      (itemsView as any).refreshAndMaintainSelection();
-    }
-
-    safeLog(`[CCF] Ignored ${items.length} items`);
+    safeLog(`[CCF] Reset auto for ${items.length} items`);
   }
 
   static toggleIgnoreItems() {
