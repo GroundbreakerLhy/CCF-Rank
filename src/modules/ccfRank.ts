@@ -729,8 +729,8 @@ class UnifiedCCFDataService {
   unignoreItem(itemID: number) {
     this.cache.delete(itemID);
     const item = Zotero.Items.get(itemID);
-    if (item?.isRegularItem()) {
-      const entry = ccfService.getEntryFromItem(item as Zotero.Item);
+    if (item && item.isRegularItem()) {
+      const entry = ccfService.getEntryFromItem(item);
       if (entry) {
         this.cache.set(itemID, {
           rank: entry.rank,
