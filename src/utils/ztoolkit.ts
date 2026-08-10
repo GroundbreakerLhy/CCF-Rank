@@ -1,20 +1,38 @@
-import { ZoteroToolkit } from "zotero-plugin-toolkit";
 import { config } from "../../package.json";
+import {
+  BasicTool,
+  DialogHelper,
+  ProgressWindowHelper,
+  UITool,
+  unregister,
+} from "zotero-plugin-toolkit";
 
 export { createZToolkit };
 
+class MyToolkit extends BasicTool {
+  UI: UITool;
+  Dialog: typeof DialogHelper;
+  ProgressWindow: typeof ProgressWindowHelper;
+
+  constructor() {
+    super();
+    this.UI = new UITool(this);
+    this.Dialog = DialogHelper;
+    this.ProgressWindow = ProgressWindowHelper;
+  }
+
+  unregisterAll() {
+    unregister(this);
+  }
+}
+
 function createZToolkit() {
-  const _ztoolkit = new ZoteroToolkit();
-  /**
-   * Alternatively, import toolkit modules you use to minify the plugin size.
-   * You can add the modules under the `MyToolkit` class below and uncomment the following line.
-   */
-  // const _ztoolkit = new MyToolkit();
+  const _ztoolkit = new MyToolkit();
   initZToolkit(_ztoolkit);
   return _ztoolkit;
 }
 
-function initZToolkit(_ztoolkit: ReturnType<typeof createZToolkit>) {
+function initZToolkit(_ztoolkit: MyToolkit) {
   const env = __env__;
   _ztoolkit.basicOptions.log.prefix = `[${config.addonName}]`;
   _ztoolkit.basicOptions.log.disableConsole = env === "production";
@@ -29,20 +47,4 @@ function initZToolkit(_ztoolkit: ReturnType<typeof createZToolkit>) {
     "default",
     `chrome://${config.addonRef}/content/icons/favicon.png`,
   );
-}
-
-import { BasicTool, unregister } from "zotero-plugin-toolkit";
-import { UITool } from "zotero-plugin-toolkit";
-
-class MyToolkit extends BasicTool {
-  UI: UITool;
-
-  constructor() {
-    super();
-    this.UI = new UITool(this);
-  }
-
-  unregisterAll() {
-    unregister(this);
-  }
 }
