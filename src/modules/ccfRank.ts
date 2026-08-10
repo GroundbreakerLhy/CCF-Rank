@@ -620,11 +620,17 @@ class UnifiedCCFDataService {
 
   private migrate() {
     const oldRanks = Zotero.Prefs.get(
-      "extensions.ccfRank.manualRanks", true) as string;
+      "extensions.ccfRank.manualRanks",
+      true,
+    ) as string;
     const oldCats = Zotero.Prefs.get(
-      "extensions.ccfRank.manualCategories", true) as string;
+      "extensions.ccfRank.manualCategories",
+      true,
+    ) as string;
     const oldIgnore = Zotero.Prefs.get(
-      "extensions.ccfRank.ignoreItems", true) as string;
+      "extensions.ccfRank.ignoreItems",
+      true,
+    ) as string;
 
     if (!oldRanks && !oldCats && !oldIgnore) return;
 
@@ -655,8 +661,10 @@ class UnifiedCCFDataService {
         const id = parseInt(idStr);
         if (!this.cache.has(id)) {
           this.cache.set(id, {
-            rank: "", category: category as string,
-            abbr: "", ignored: false,
+            rank: "",
+            category: category as string,
+            abbr: "",
+            ignored: false,
           });
         }
       }
@@ -667,7 +675,10 @@ class UnifiedCCFDataService {
       for (const id of ignoreData) {
         if (!this.cache.has(id)) {
           this.cache.set(id, {
-            rank: "", category: "", abbr: "", ignored: true,
+            rank: "",
+            category: "",
+            abbr: "",
+            ignored: true,
           });
         }
       }
@@ -707,7 +718,10 @@ class UnifiedCCFDataService {
 
   ignoreItem(itemID: number) {
     this.cache.set(itemID, {
-      rank: "", category: "", abbr: "", ignored: true,
+      rank: "",
+      category: "",
+      abbr: "",
+      ignored: true,
     });
     this.save();
   }
@@ -760,9 +774,10 @@ const CCF_ABBR_GROUPS: Array<{
   }
   const groupByKind = (kind: "conference" | "journal") => {
     const groups = new Map<string, Array<{ label: string; entry: CCFEntry }>>();
-    const entries = kind === "conference"
-      ? (ccfData as any).conferences
-      : (ccfData as any).journals;
+    const entries =
+      kind === "conference"
+        ? (ccfData as any).conferences
+        : (ccfData as any).journals;
     for (const entry of entries as CCFEntry[]) {
       const label = entry.abbr
         ? (seenCount.get(entry.abbr) || 0) > 1
@@ -904,7 +919,10 @@ export class CCFRankFactory {
     const abbrItems = new Map<string, Element[]>();
     for (const group of CCF_ABBR_GROUPS) {
       const kindMenu = doc.createXULElement("menu");
-      kindMenu.setAttribute("label", group.kind === "conference" ? "会议" : "期刊");
+      kindMenu.setAttribute(
+        "label",
+        group.kind === "conference" ? "会议" : "期刊",
+      );
       const kindPopup = doc.createXULElement("menupopup");
       kindMenu.appendChild(kindPopup);
       for (const cat of group.categories) {
@@ -956,9 +974,7 @@ export class CCFRankFactory {
 
     popup.addEventListener("popupshowing", () => {
       const items = Zotero.getActiveZoteroPane()?.getSelectedItems() || [];
-      const allIgnored = items.every((item) =>
-        dataService.isIgnored(item.id),
-      );
+      const allIgnored = items.every((item) => dataService.isIgnored(item.id));
 
       if (allIgnored) {
         ignoreItem.setAttribute("checked", "true");
@@ -1030,9 +1046,7 @@ export class CCFRankFactory {
     const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
     if (!items || items.length === 0) return;
 
-    const allIgnored = items.every((item) =>
-      dataService.isIgnored(item.id),
-    );
+    const allIgnored = items.every((item) => dataService.isIgnored(item.id));
 
     for (const item of items) {
       if (allIgnored) {

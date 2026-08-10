@@ -1,4 +1,4 @@
-import { config } from "../../package.json";
+import { config, version } from "../../package.json";
 
 const VERSION_KEY = "extensions.ccfRank.lastShownVersion";
 
@@ -21,8 +21,8 @@ const UPDATE_LOGS: UpdateLog[] = [
 ];
 
 function compareVersions(a: string, b: string): number {
-  const pa = a.split(".").map(Number);
-  const pb = b.split(".").map(Number);
+  const pa = (a || "").split(".").map(Number);
+  const pb = (b || "").split(".").map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const diff = (pa[i] || 0) - (pb[i] || 0);
     if (diff !== 0) return diff;
@@ -31,7 +31,7 @@ function compareVersions(a: string, b: string): number {
 }
 
 export function showUpdateDialogIfNeeded() {
-  const current = (config as any).version;
+  const current = version;
   const stored = Zotero.Prefs.get(VERSION_KEY, true) as string;
 
   // 全新安装：只记录版本，不弹窗
