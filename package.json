@@ -35,7 +35,7 @@
   "devDependencies": {
     "@types/chai": "^5.2.2",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.1.2",
     "@zotero-plugin/eslint-config": "^0.6.10",
     "chai": "^5.2.1",
     "eslint": "^10.8.0",
