@@ -49,6 +49,14 @@ Zotero 插件，用于自动显示文献的 CCF（中国计算机学会）会议
 
 CCF 推荐列表存储在 `src/data/ccf-conferences.json`，当前数据根据官方 PDF「中国计算机学会推荐国际学术会议和期刊目录第七版（2026年3月更新）」整理。
 
+### 数据状态
+
+- 当前版本：2026-03
+- 更新时间：2026-09-16
+- 会议（conferences）：385 条
+- 期刊（journals）：295 条
+- 勘误：CASA 已更名为 CASAXR（International Conference on Computer Animation, Social Agents, and Extended Reality），旧称 CASA 及旧全称通过 `aliases` 字段保留兼容
+
 官方链接：[中国计算机学会推荐国际学术会议和期刊目录](https://www.ccf.org.cn/Academic_Evaluation/By_category/)
 
 便捷查询：[ccf.atom.im](https://ccf.atom.im/)

@@ -18,6 +18,8 @@ interface CCFEntry {
   fullName: string;
   rank: "A" | "B" | "C";
   category: string;
+  /** 旧称/别称，会议改名后保留旧写法以保证存量条目仍可匹配 */
+  aliases?: string[];
 }
 
 type EntryKind = "conference" | "journal";
@@ -347,6 +349,27 @@ class CCFRankService {
         fullTokens,
         aliases,
       };
+
+      // 旧称/别称：缩写形式进缩写索引与评分别名，全称形式进全称索引
+      for (const extra of entry.aliases || []) {
+        const extraAbbr = this.normalizeAbbr(extra);
+        if (
+          this.isUsableAlias(extraAbbr) &&
+          !indexed.aliases.includes(extraAbbr)
+        ) {
+          indexed.aliases.push(extraAbbr);
+          const abbrEntries = this.exactAbbrMap.get(extraAbbr) || [];
+          abbrEntries.push(indexed);
+          this.exactAbbrMap.set(extraAbbr, abbrEntries);
+        }
+        const extraFullName = this.normalizeText(extra);
+        if (extraFullName) {
+          const fullNameEntries =
+            this.exactFullNameMap.get(extraFullName) || [];
+          fullNameEntries.push(indexed);
+          this.exactFullNameMap.set(extraFullName, fullNameEntries);
+        }
+      }
 
       const fullNameEntries =
         this.exactFullNameMap.get(normalizedFullName) || [];

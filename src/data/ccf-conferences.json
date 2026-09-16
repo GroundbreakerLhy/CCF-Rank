@@ -1671,10 +1671,14 @@
       "category": "计算机图形学与多媒体"
     },
     {
-      "abbr": "CASA",
-      "fullName": "International Conference on Computer Animation and Social Agents",
+      "abbr": "CASAXR",
+      "fullName": "International Conference on Computer Animation, Social Agents, and Extended Reality",
       "rank": "C",
-      "category": "计算机图形学与多媒体"
+      "category": "计算机图形学与多媒体",
+      "aliases": [
+        "CASA",
+        "International Conference on Computer Animation and Social Agents"
+      ]
     },
     {
       "abbr": "CGI",
