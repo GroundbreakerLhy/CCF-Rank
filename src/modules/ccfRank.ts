@@ -3,6 +3,7 @@
  */
 
 import ccfData from "../data/ccf-conferences.json";
+import { version as PLUGIN_VERSION } from "../../package.json";
 
 /**
  * 安全的日志输出函数
@@ -73,6 +74,12 @@ const INVALID_ABBRS = new Set([
   "JOURNAL",
   "TRANSACTIONS",
 ]);
+
+/** CCF 数据版本，随 ccf-conferences.json 更新 */
+const CCF_DATA_VERSION = "2026-04";
+
+const ISSUE_REPORT_URL =
+  "https://github.com/GroundbreakerLhy/CCF-Rank/issues/new";
 
 class CCFRankService {
   private conferences: CCFEntry[];
@@ -986,6 +993,11 @@ export class CCFRankFactory {
     resetItem.addEventListener("command", () => this.resetAutoFromMenu());
     popup.appendChild(resetItem);
 
+    const reportItem = doc.createXULElement("menuitem");
+    reportItem.setAttribute("label", "报告匹配问题");
+    reportItem.addEventListener("command", () => this.reportIssueFromMenu());
+    popup.appendChild(reportItem);
+
     const separator = doc.createXULElement("menuseparator");
     popup.appendChild(separator);
 
@@ -1063,6 +1075,86 @@ export class CCFRankFactory {
     }
 
     safeLog(`[CCF] Reset auto for ${items.length} items`);
+  }
+
+  /** 打开预填充的 GitHub Issue，反馈选中条目（多选时取第一个）的匹配问题 */
+  static reportIssueFromMenu() {
+    const items = Zotero.getActiveZoteroPane()?.getSelectedItems();
+    const item = items?.find((it) => it.isRegularItem());
+    if (!item) return;
+
+    const report = this.buildIssueReport(item);
+    const url =
+      `${ISSUE_REPORT_URL}?labels=mismatch-report` +
+      `&title=${encodeURIComponent(report.title)}` +
+      `&body=${encodeURIComponent(report.body)}`;
+    Zotero.launchURL(url);
+
+    safeLog(`[CCF] Opened issue report for item ${item.id}`);
+  }
+
+  private static buildIssueReport(item: Zotero.Item): {
+    title: string;
+    body: string;
+  } {
+    const stored = dataService.getItemData(item.id);
+    const auto = ccfService.getEntryFromItem(item);
+    const field = (name: string) => (item.getField(name) as string) || "";
+
+    const itemLines = [
+      ["标题", field("title")],
+      ["条目类型", item.itemType],
+      ["publicationTitle", field("publicationTitle")],
+      ["proceedingsTitle", field("proceedingsTitle")],
+      ["conferenceName", field("conferenceName")],
+      ["DOI", field("DOI")],
+    ]
+      .filter(([, v]) => v)
+      .map(([k, v]) => `- ${k}：${v}`);
+
+    let current: string;
+    if (stored?.ignored) {
+      current = "已忽略";
+    } else if (stored && (stored.abbr || stored.rank)) {
+      current = `${stored.abbr || "-"} / CCF ${stored.rank || "-"} / ${stored.category || "-"}`;
+    } else {
+      current = "未匹配";
+    }
+
+    const autoResult = auto
+      ? `${auto.abbr} / CCF ${auto.rank} / ${auto.category}`
+      : "未匹配";
+
+    // 实时输出与显示结果一致时不重复展示；不一致说明是手动改过或缓存过时，附上供调试
+    const storedAbbr = stored && !stored.ignored ? stored.abbr : "";
+    const resultLines = [current];
+    if ((auto?.abbr || "") !== storedAbbr) {
+      resultLines.push(`（自动匹配实时输出：${autoResult}）`);
+    }
+
+    const titleHint =
+      stored?.abbr || auto?.abbr || field("title").slice(0, 50) || "未匹配条目";
+
+    const body = [
+      "## 条目信息",
+      ...itemLines,
+      "",
+      "## 当前匹配结果",
+      ...resultLines,
+      "",
+      "## 环境信息",
+      `- 插件版本：${PLUGIN_VERSION}`,
+      `- 数据版本：${CCF_DATA_VERSION}`,
+      `- Zotero 版本：${Zotero.version}`,
+      "",
+      "## 正确结果（请填写）",
+      "",
+      "",
+      "## 补充说明（可选）",
+      "",
+    ].join("\n");
+
+    return { title: `[匹配反馈] ${titleHint}`, body };
   }
 
   static toggleIgnoreItems() {
