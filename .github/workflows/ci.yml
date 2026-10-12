@@ -25,6 +25,8 @@ jobs:
         run: npm install
       - name: Run Lint
         run: npm run lint:check
+      - name: Test citation module
+        run: npm run test:citations
 
   build:
     runs-on: ubuntu-latest

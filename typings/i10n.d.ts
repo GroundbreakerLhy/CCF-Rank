@@ -4,7 +4,5 @@
 // @ts-nocheck
 export type FluentMessageId =
   | 'menuitem-label'
-  | 'pref-enable'
   | 'pref-help'
-  | 'pref-input'
   | 'pref-title';

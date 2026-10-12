@@ -3,6 +3,7 @@ import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 import { CCFRankFactory } from "./modules/ccfRank";
 import { showUpdateDialogIfNeeded } from "./modules/update";
+import { CitationCountFactory } from "./modules/citationCount";
 
 async function onStartup() {
   await Promise.all([
@@ -15,6 +16,7 @@ async function onStartup() {
 
   await CCFRankFactory.registerCCFColumn();
   CCFRankFactory.registerNotifier();
+  await CitationCountFactory.startup();
 
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
@@ -34,13 +36,16 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   );
 
   CCFRankFactory.registerRightClickMenu(win);
+  CitationCountFactory.registerMenu(win);
 }
 
 async function onMainWindowUnload(win: Window): Promise<void> {
+  CitationCountFactory.unloadWindow(win);
   ztoolkit.unregisterAll();
 }
 
-function onShutdown(): void {
+async function onShutdown(): Promise<void> {
+  await CitationCountFactory.shutdown();
   CCFRankFactory.unregisterNotifier();
   ztoolkit.unregisterAll();
   addon.data.alive = false;
