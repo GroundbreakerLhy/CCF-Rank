@@ -7,8 +7,10 @@
 declare namespace _ZoteroTypes {
   interface Prefs {
     PluginPrefsMap: {
-      "enable": boolean;
-      "input": string;
+      "citation.enabled": boolean;
+      "citation.autoUpdate": boolean;
+      "citation.cacheDays": number;
+      "citation.openAlexKey": string;
     };
   }
 }
