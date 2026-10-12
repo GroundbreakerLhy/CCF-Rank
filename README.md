@@ -5,16 +5,15 @@
 [![GitHub stars](https://img.shields.io/github/stars/GroundbreakerLhy/CCF-Rank?style=social)](https://github.com/GroundbreakerLhy/CCF-Rank)
 [![GitHub release](https://img.shields.io/github/v/release/GroundbreakerLhy/CCF-Rank?style=flat-square)](https://github.com/GroundbreakerLhy/CCF-Rank/releases)
 
-Zotero 插件，用于自动显示文献的 CCF（中国计算机学会）会议和期刊等级，包含完整的 CCF 2026 推荐列表。
+Zotero 插件，用于显示文献的 CCF（中国计算机学会）会议和期刊等级与被引次数，包含完整的 CCF 2026 推荐列表。
 
 ### 功能特性
 
 - 自动识别文献的 CCF 等级（A/B/C）、学科分类与官方简称
-- 文献列表中一键勾选显示「CCF 等级」「CCF 分类」「CCF 简称」三列
+- 文献列表中一键勾选显示「CCF 等级」「CCF 分类」「CCF 简称」及被引次数等信息列
 - 自动匹配结果不准确时，可通过右键菜单手动指定 CCF 简称（会议 / 期刊 → 学科分类 → 等级分组），等级与分类自动带出
 - 支持「恢复自动匹配」与「忽略条目」
 - 匹配结果有误时，可通过右键菜单「报告匹配问题」一键向作者反馈（自动打开预填充的 GitHub Issue）
-- OpenAlex 被引次数查询、缓存与批量更新
 
 ![效果展示](./src/data/效果展示.png)
 ![手动设置](./src/data/手动设置.png)
@@ -34,6 +33,14 @@ Zotero 插件，用于自动显示文献的 CCF（中国计算机学会）会议
 2. 勾选「CCF 等级」「CCF 分类」「CCF 简称」列
 3. 插件会自动识别文献所属会议 / 期刊并显示对应信息
 
+### 查询被引次数
+
+1. 在 Zotero 文献列表的表头右键点击
+2. 勾选「被引次数」列，也可勾选「被引数据源」「被引更新时间」「被引状态」列
+3. 选中文献（支持多选），右键 →「被引次数」→「更新所选条目的被引次数」，查询 OpenAlex 数据
+
+自动更新默认关闭，可在 Zotero 设置 → CCF Rank 中开启、调整缓存有效期（默认 7 天）或填写 OpenAlex API Key。未找到的次数显示为空，更新失败时保留旧值。
+
 ### 手动指定简称
 
 自动匹配结果不准确时，右键选中的文献 →「CCF 选项」→「设置 CCF 简称」：
@@ -46,14 +53,8 @@ Zotero 插件，用于自动显示文献的 CCF（中国计算机学会）会议
 
 - **恢复自动匹配**：清除手动指定的简称，重新自动识别
 - **忽略条目**：勾选后该条目不显示任何 CCF 信息
-
-## 被引次数
-
-表头勾选「被引次数」及所需的来源、更新时间、状态列，右键文献 →「被引次数」→「更新所选条目的被引次数」。
-
-自动更新默认关闭，缓存默认有效 7 天，可在设置 → CCF Rank 中调整并填写 OpenAlex API Key。查询会向 OpenAlex 发送 DOI 或标题；缓存和密钥仅保存在本机，不修改文献字段。未找到不记为 0，更新失败保留旧值。
-
-匹配有歧义时使用「确认 OpenAlex 论文…」，确认后继续自动更新。无对应记录时可到 Google Scholar 核对，最后再手动填写次数；手动值不会被自动刷新覆盖。
+- **确认 OpenAlex 论文**：匹配有歧义时，核对并确认候选论文，后续按该记录更新被引次数
+- **手动填写被引次数**：无对应记录时，可先通过「在 Google Scholar 中核对」查看，再填写次数；手动值不会被自动更新覆盖
 
 ## 数据更新
 
