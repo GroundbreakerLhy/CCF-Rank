@@ -39,8 +39,10 @@ export default defineConfig({
     ],
   },
 
-  test: {
-    waitForPlugin: `() => Zotero.${pkg.config.addonInstance}.data.initialized`,
+  release: {
+    bumpp: {
+      execute: "npm run build",
+    },
   },
 
   // If you need to see a more detailed log, uncomment the following line:

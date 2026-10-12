@@ -13,7 +13,11 @@ tsconfig.tsbuildinfo
 .env
 .scaffold
 build
+
+## Other
 logs
 claude.md
+agent.md
 .claude/
 .vscode/
+tests/
