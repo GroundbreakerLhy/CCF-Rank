@@ -17,7 +17,7 @@ function safeLog(...args: any[]) {
 interface CCFEntry {
   abbr: string;
   fullName: string;
-  rank: "A" | "B" | "C";
+  rank: "A" | "B" | "C" | "N";
   category: string;
   /** 旧称/别称，会议改名后保留旧写法以保证存量条目仍可匹配 */
   aliases?: string[];
@@ -224,6 +224,13 @@ class CCFRankService {
     const re = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i");
     return re.test(normalizedInput);
   }
+  private appearsAsUppercase(rawText: string, alias: string): boolean {
+    const escaped = alias
+      .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+      .replace(/\s+/g, "\\s+");
+    const re = new RegExp(`(^|[^A-Za-z0-9])${escaped}([^A-Za-z0-9]|$)`);
+    return re.test(rawText);
+  }
 
   private scoreEntry(
     inputText: string,
@@ -240,7 +247,16 @@ class CCFRankService {
     for (const alias of indexed.aliases) {
       if (!this.isUsableAlias(alias)) continue;
       const lowerAlias = alias.toLowerCase();
-      if (this.containsAlias(normalizedInput, alias)) {
+      const shortAlias = alias.length <= 3;
+      const plainWordAlias =
+        !alias.includes(" ") &&
+        indexed.normalizedFullName === alias.toLowerCase();
+      if (
+        this.containsAlias(normalizedInput, alias) &&
+        (!shortAlias && !plainWordAlias
+          ? true
+          : this.appearsAsUppercase(inputText, alias))
+      ) {
         // Prefer direct abbreviation mention.
         score = Math.max(score, 900 + Math.min(50, alias.length));
       }
@@ -252,7 +268,11 @@ class CCFRankService {
       }
     }
 
-    if (normalizedInput.includes(indexed.normalizedFullName)) {
+    // 全称包含加分：单词型全称（如期刊 Networks）过于通用，仅允许精确匹配
+    if (
+      indexed.normalizedFullName.includes(" ") &&
+      normalizedInput.includes(indexed.normalizedFullName)
+    ) {
       score = Math.max(score, 780);
     }
 
@@ -312,7 +332,8 @@ class CCFRankService {
 
       if (
         normalizedInput === candidate.normalizedFullName ||
-        normalizedInput.includes(candidate.normalizedFullName)
+        (candidate.normalizedFullName.includes(" ") &&
+          normalizedInput.includes(candidate.normalizedFullName))
       ) {
         score += 120;
       }
@@ -441,8 +462,12 @@ class CCFRankService {
     }
 
     // Handle patterns like "CCS '18: ..." by extracting the leading token.
+    // 仅接受含 ≥2 个大写字母的首词（CCS/CoRL/MLSys），避免普通单词（Networks）误触发。
     const leadingToken = stripped.match(/^([A-Za-z][A-Za-z0-9+/-]{1,})\b/);
-    if (leadingToken) {
+    const leadingUpperCount = leadingToken
+      ? (leadingToken[1].match(/[A-Z]/g) || []).length
+      : 0;
+    if (leadingToken && leadingUpperCount >= 2) {
       const tokenKey = this.normalizeAbbr(leadingToken[1]);
       if (
         !new Set(["ACM", "IEEE", "INTERNATIONAL", "PROCEEDINGS"]).has(tokenKey)
@@ -960,8 +985,8 @@ export class CCFRankFactory {
         catMenu.setAttribute("label", cat.category);
         const catPopup = doc.createXULElement("menupopup");
         catMenu.appendChild(catPopup);
-        // 按 A/B/C 排序，等级切换处分隔
-        const rankOrder: Record<string, number> = { A: 0, B: 1, C: 2 };
+        // 按 A/B/C/N 排序，等级切换处分隔
+        const rankOrder: Record<string, number> = { A: 0, B: 1, C: 2, N: 3 };
         const sorted = [...cat.items].sort(
           (a, b) =>
             (rankOrder[a.entry.rank] ?? 9) - (rankOrder[b.entry.rank] ?? 9),

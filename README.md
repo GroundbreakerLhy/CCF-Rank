@@ -64,7 +64,7 @@ CCF 推荐列表存储在 `src/data/ccf-conferences.json`，当前数据根据�
 
 - 当前版本：2026-04
 - 更新时间：2026-09-16
-- 会议（conferences）：385 条
+- 会议（conferences）：434 条（含 48 个 CCF 未收录、标记为 N 的会议）
 - 期刊（journals）：295 条
 - 勘误：CASA 已更名为 CASAXR（International Conference on Computer Animation, Social Agents, and Extended Reality），旧称 CASA 及旧全称通过 `aliases` 字段保留兼容
 
