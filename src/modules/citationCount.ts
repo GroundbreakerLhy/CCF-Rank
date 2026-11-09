@@ -211,6 +211,8 @@ export class CitationCountFactory {
         pluginID: config.addonID,
         dataKey: key,
         label,
+        // 被引次数列固定宽度，避免被数字撑开或挤压
+        ...(key === "citationCount" ? { width: "75", fixedWidth: true } : {}),
         dataProvider: (item: Zotero.Item) => {
           if (!this.enabled()) return "";
           const identity = this.identity(item);
