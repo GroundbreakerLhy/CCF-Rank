@@ -106,7 +106,8 @@ class CCFRankService {
       .replace(/&/g, " and ")
       .replace(/[^a-z0-9+/\-\s]/g, " ")
       .replace(/\s+/g, " ")
-      .trim();
+      .trim()
+      .replace(/^the\s+/, "");
   }
 
   private normalizeAbbr(input: string): string {
@@ -490,7 +491,15 @@ class CCFRankService {
     }
 
     // Phase 2: exact full-name match.
-    const fullNameCandidates = this.exactFullNameMap.get(normalizedInput) || [];
+    // 同时用未去噪的原文再查一次：像“Proceedings of the ACM on Programming Languages”
+    // 这类名称本身就以 Proceedings 开头，去噪后反而对不上。
+    const wholeNormalized = this.normalizeText(original);
+    const fullNameCandidates = [
+      ...(this.exactFullNameMap.get(normalizedInput) || []),
+      ...(wholeNormalized !== normalizedInput
+        ? this.exactFullNameMap.get(wholeNormalized) || []
+        : []),
+    ];
     picked = this.pickBestCandidate(
       fullNameCandidates,
       stripped,
